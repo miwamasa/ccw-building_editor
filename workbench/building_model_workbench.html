@@ -834,25 +834,35 @@
 
                 // 建物階層
                 lines.push(`■ 空間階層:`);
-                lines.push(`Building: ${buildingData.building.id} (${buildingData.building.name})`);
+                lines.push(`Building: ${buildingData.building?.id || 'N/A'} (${buildingData.building?.name || 'N/A'})`);
 
-                buildingData.floors.forEach(floor => {
+                // 安全に配列にアクセス
+                const floors = buildingData.floors || [];
+                const largeZones = buildingData.largeZones || [];
+                const smallZones = buildingData.smallZones || [];
+                const rooms = buildingData.rooms || [];
+                const chillers = buildingData.centralHVAC?.chillers || [];
+                const ahus = buildingData.centralHVAC?.ahus || [];
+                const vavs = buildingData.centralHVAC?.vavs || [];
+                const vrfs = buildingData.individualHVAC?.vrfs || [];
+
+                floors.forEach(floor => {
                     lines.push(`  └─ Floor: ${floor.id} (${floor.name})`);
 
                     // LargeZoneの取得
-                    buildingData.largeZones
+                    largeZones
                         .filter(lz => lz.floorId === floor.id)
                         .forEach(lz => {
                             lines.push(`      └─ LargeZone: ${lz.id} (${lz.name})`);
 
                             // SmallZoneの取得
-                            buildingData.smallZones
+                            smallZones
                                 .filter(sz => sz.largeZoneId === lz.id)
                                 .forEach(sz => {
                                     lines.push(`          └─ SmallZone: ${sz.id} (${sz.name})`);
 
                                     // Roomの取得
-                                    buildingData.rooms
+                                    rooms
                                         .filter(room => room.smallZoneId === sz.id)
                                         .forEach(room => {
                                             lines.push(`              └─ Room: ${room.id} (${room.name})`);
@@ -865,30 +875,30 @@
                 lines.push(`■ 設備階層:`);
 
                 // Chiller階層
-                buildingData.centralHVAC.chillers.forEach(chiller => {
+                chillers.forEach(chiller => {
                     lines.push(`Chiller: ${chiller.id}`);
 
                     // ChillerのAHU接続
-                    buildingData.centralHVAC.ahus
+                    ahus
                         .filter(ahu => ahu.chillerId === chiller.id)
                         .forEach(ahu => {
                             lines.push(`  └─ AHU: ${ahu.id}`);
 
                             // AHUのVAV接続
-                            buildingData.centralHVAC.vavs
+                            vavs
                                 .filter(vav => vav.ahuId === ahu.id)
                                 .forEach(vav => {
-                                    const lz = buildingData.largeZones.find(z => z.id === vav.servedZoneId);
+                                    const lz = largeZones.find(z => z.id === vav.servedZoneId);
                                     lines.push(`      └─ VAV: ${vav.id} → LargeZone: ${vav.servedZoneId}${lz ? ' ('+lz.name+')' : ''}`);
                                 });
                         });
                 });
 
                 // VRF階層
-                buildingData.individualHVAC.vrfs.forEach(vrf => {
+                vrfs.forEach(vrf => {
                     lines.push(`VRF: ${vrf.id}`);
-                    vrf.servedZoneIds.forEach(zoneId => {
-                        const sz = buildingData.smallZones.find(z => z.id === zoneId);
+                    (vrf.servedZoneIds || []).forEach(zoneId => {
+                        const sz = smallZones.find(z => z.id === zoneId);
                         lines.push(`  └─ SmallZone: ${zoneId}${sz ? ' ('+sz.name+')' : ''}`);
                     });
                 });
