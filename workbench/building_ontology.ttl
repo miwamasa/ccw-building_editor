@@ -1,0 +1,202 @@
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix wb: <https://example.com/workbench/building#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# ==========================================
+# 建物モデルワークベンチ オントロジー定義
+# ==========================================
+#
+# このオントロジーは以下を統合します:
+# 1. Brick Schemaベースの建物・設備モデル
+# 2. ハイブリッド空調システム（全館空調+個別空調）
+# 3. センサーマッピングのための拡張プロパティ
+# 4. 自然言語クエリのための意味的アノテーション
+# ==========================================
+
+# -----------------------------
+# 建物構造クラスの拡張
+# -----------------------------
+
+wb:BuildingModel a owl:Class ;
+    rdfs:label "Building Model"@en, "建物モデル"@ja ;
+    rdfs:comment "統合された建物モデル（構造、設備、センサーを含む）" ;
+    rdfs:subClassOf brick:Building .
+
+wb:FloorModel a owl:Class ;
+    rdfs:label "Floor Model"@en, "階モデル"@ja ;
+    rdfs:subClassOf brick:Floor ;
+    rdfs:comment "建物の階層構造を表現" .
+
+wb:ZoneModel a owl:Class ;
+    rdfs:label "Zone Model"@en, "ゾーンモデル"@ja ;
+    rdfs:subClassOf brick:HVAC_Zone ;
+    rdfs:comment "空調ゾーン（大ゾーン・小ゾーン）" .
+
+wb:RoomModel a owl:Class ;
+    rdfs:label "Room Model"@en, "室モデル"@ja ;
+    rdfs:subClassOf brick:Room ;
+    rdfs:comment "個別の部屋" .
+
+# -----------------------------
+# 設備クラスの拡張
+# -----------------------------
+
+wb:HVACEquipment a owl:Class ;
+    rdfs:label "HVAC Equipment"@en, "空調設備"@ja ;
+    rdfs:comment "全館空調・個別空調設備の基底クラス" .
+
+wb:CentralHVAC a owl:Class ;
+    rdfs:label "Central HVAC"@en, "全館空調システム"@ja ;
+    rdfs:subClassOf wb:HVACEquipment ;
+    rdfs:comment "チラー、外調機、VAVを含む全館空調" .
+
+wb:IndividualHVAC a owl:Class ;
+    rdfs:label "Individual HVAC"@en, "個別空調システム"@ja ;
+    rdfs:subClassOf wb:HVACEquipment ;
+    rdfs:comment "VRF等の個別空調機器" .
+
+# -----------------------------
+# センサーマッピング用の拡張クラス
+# -----------------------------
+
+wb:GeneratedSensor a owl:Class ;
+    rdfs:label "Generated Sensor"@en, "生成センサー"@ja ;
+    rdfs:comment "建物エディタで生成された論理的なセンサー定義" ;
+    rdfs:subClassOf brick:Point .
+
+wb:PhysicalSensor a owl:Class ;
+    rdfs:label "Physical Sensor"@en, "具体センサー"@ja ;
+    rdfs:comment "実際に設置されている物理的なセンサー" ;
+    rdfs:subClassOf brick:Point .
+
+wb:SensorMapping a owl:Class ;
+    rdfs:label "Sensor Mapping"@en, "センサーマッピング"@ja ;
+    rdfs:comment "生成センサーと具体センサーの対応関係" .
+
+# -----------------------------
+# プロパティ定義
+# -----------------------------
+
+# 基本プロパティ
+wb:hasArea a owl:DatatypeProperty ;
+    rdfs:label "has area"@en, "面積"@ja ;
+    rdfs:domain [ owl:unionOf (wb:FloorModel wb:RoomModel) ] ;
+    rdfs:range xsd:float ;
+    rdfs:comment "面積（平方メートル）" .
+
+wb:hasCapacity a owl:DatatypeProperty ;
+    rdfs:label "has capacity"@en, "容量"@ja ;
+    rdfs:domain wb:HVACEquipment ;
+    rdfs:range xsd:float ;
+    rdfs:comment "設備容量" .
+
+wb:hasPowerRating a owl:DatatypeProperty ;
+    rdfs:label "has power rating"@en, "定格電力"@ja ;
+    rdfs:domain wb:HVACEquipment ;
+    rdfs:range xsd:float ;
+    rdfs:comment "定格電力（kW）" .
+
+wb:hasAirflow a owl:DatatypeProperty ;
+    rdfs:label "has airflow"@en, "風量"@ja ;
+    rdfs:domain brick:AHU ;
+    rdfs:range xsd:float ;
+    rdfs:comment "風量（m³/h）" .
+
+# センサーマッピング用プロパティ
+wb:mapsToPhysicalSensor a owl:ObjectProperty ;
+    rdfs:label "maps to physical sensor"@en, "具体センサーにマッピング"@ja ;
+    rdfs:domain wb:GeneratedSensor ;
+    rdfs:range wb:PhysicalSensor ;
+    rdfs:comment "生成センサーと具体センサーの対応" .
+
+wb:hasConfidenceScore a owl:DatatypeProperty ;
+    rdfs:label "has confidence score"@en, "信頼度スコア"@ja ;
+    rdfs:domain wb:SensorMapping ;
+    rdfs:range xsd:float ;
+    rdfs:comment "AIによるマッピングの信頼度（0.0-1.0）" .
+
+wb:hasMappingReason a owl:DatatypeProperty ;
+    rdfs:label "has mapping reason"@en, "マッピング理由"@ja ;
+    rdfs:domain wb:SensorMapping ;
+    rdfs:range xsd:string ;
+    rdfs:comment "マッピングの根拠説明" .
+
+# 自然言語クエリ用プロパティ
+wb:hasSemanticTag a owl:DatatypeProperty ;
+    rdfs:label "has semantic tag"@en, "意味タグ"@ja ;
+    rdfs:comment "自然言語検索のためのキーワードタグ" .
+
+wb:hasDescription a owl:DatatypeProperty ;
+    rdfs:label "has description"@en, "説明"@ja ;
+    rdfs:comment "人間可読な説明文" .
+
+wb:hasAlias a owl:DatatypeProperty ;
+    rdfs:label "has alias"@en, "別名"@ja ;
+    rdfs:comment "別名・愛称" .
+
+# 横断的構成のためのプロパティ
+wb:crossZoneFeeds a owl:ObjectProperty ;
+    rdfs:label "cross zone feeds"@en, "横断供給"@ja ;
+    rdfs:comment "VRFが複数の大ゾーンをまたいで小ゾーンに供給する関係" .
+
+# -----------------------------
+# センサータイプの定義
+# -----------------------------
+
+wb:TemperatureSensor a owl:Class ;
+    rdfs:label "Temperature Sensor"@en, "温度センサー"@ja ;
+    rdfs:subClassOf brick:Temperature_Sensor .
+
+wb:HumiditySensor a owl:Class ;
+    rdfs:label "Humidity Sensor"@en, "湿度センサー"@ja ;
+    rdfs:subClassOf brick:Humidity_Sensor .
+
+wb:PowerSensor a owl:Class ;
+    rdfs:label "Power Sensor"@en, "電力センサー"@ja ;
+    rdfs:subClassOf brick:Electric_Power_Sensor .
+
+wb:FlowSensor a owl:Class ;
+    rdfs:label "Flow Sensor"@en, "流量センサー"@ja ;
+    rdfs:subClassOf brick:Flow_Sensor .
+
+wb:PositionSensor a owl:Class ;
+    rdfs:label "Position Sensor"@en, "位置センサー"@ja ;
+    rdfs:subClassOf brick:Position_Sensor .
+
+# -----------------------------
+# 制約とルール
+# -----------------------------
+
+# 建物は少なくとも1つの階を持つ必要がある
+wb:BuildingModel rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty brick:hasPart ;
+    owl:someValuesFrom wb:FloorModel
+] .
+
+# 階は少なくとも1つのゾーンを持つ必要がある
+wb:FloorModel rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty brick:hasPart ;
+    owl:someValuesFrom wb:ZoneModel
+] .
+
+# センサーは設備またはゾーンに関連付けられる必要がある
+wb:GeneratedSensor rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty brick:isPointOf ;
+    owl:minCardinality "1"^^xsd:nonNegativeInteger
+] .
+
+# ==========================================
+# アノテーション
+# ==========================================
+
+<https://example.com/workbench/building#> a owl:Ontology ;
+    rdfs:label "Building Model Workbench Ontology"@en, "建物モデルワークベンチ オントロジー"@ja ;
+    rdfs:comment "ハイブリッド空調システムの建物モデルワークベンチ用オントロジー。Brick Schemaを拡張し、センサーマッピングと自然言語クエリをサポート。"@ja ;
+    owl:versionInfo "1.0" ;
+    owl:imports <https://brickschema.org/schema/1.4/Brick> .
