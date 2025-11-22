@@ -533,6 +533,8 @@
             const [physicalSensors, setPhysicalSensors] = useState([]);
             const [sensorMappings, setSensorMappings] = useState([]);
             const [matchingMode, setMatchingMode] = useState('regex'); // 'regex' or 'ai'
+            const [lastAIPrompt, setLastAIPrompt] = useState(''); // 最後のAIマッチングプロンプト
+            const [showPromptModal, setShowPromptModal] = useState(false); // プロンプト表示モーダル
             const [chatMessages, setChatMessages] = useState([]);
             const [apiKey, setApiKey] = useState('');
             const [apiProvider, setApiProvider] = useState('openai');
@@ -1064,6 +1066,9 @@ ${JSON.stringify(physicalSensors, null, 2)}
 
 必ず信頼度0.5以上のマッピングのみを出力してください。`;
 
+                // プロンプトを保存（再利用のため）
+                setLastAIPrompt(systemPrompt);
+
                 try {
                     const response = await callActualAPI(systemPrompt, apiProvider, apiModel, apiEndpoint, apiKey);
 
@@ -1406,6 +1411,7 @@ ${JSON.stringify(physicalSensors, null, 2)}
                             onPerformMapping={performSensorMapping}
                             matchingMode={matchingMode}
                             onMatchingModeChange={setMatchingMode}
+                            lastAIPrompt={lastAIPrompt}
                         />;
                     case 'chat':
                         return <ChatInterface
@@ -2428,7 +2434,18 @@ ${JSON.stringify(physicalSensors, null, 2)}
         };
 
         // センサーマッピングコンポーネント
-        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping, matchingMode, onMatchingModeChange }) => {
+        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping, matchingMode, onMatchingModeChange, lastAIPrompt }) => {
+            const [showPrompt, setShowPrompt] = useState(false);
+
+            const copyPromptToClipboard = () => {
+                navigator.clipboard.writeText(lastAIPrompt).then(() => {
+                    alert('プロンプトをクリップボードにコピーしました');
+                }).catch(err => {
+                    console.error('コピー失敗:', err);
+                    alert('コピーに失敗しました');
+                });
+            };
+
             return (
                 <>
                     <div className="toolbar">
@@ -2550,6 +2567,48 @@ ${JSON.stringify(physicalSensors, null, 2)}
                                             </span>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {lastAIPrompt && (
+                            <div className="card">
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                                    <h2 style={{margin: 0}}>AIマッチングプロンプト</h2>
+                                    <div>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={copyPromptToClipboard}
+                                            style={{marginRight: '10px'}}
+                                        >
+                                            📋 コピー
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => setShowPrompt(!showPrompt)}
+                                        >
+                                            {showPrompt ? '▼ 隠す' : '▶ 表示'}
+                                        </button>
+                                    </div>
+                                </div>
+                                {showPrompt && (
+                                    <div style={{
+                                        background: '#f5f5f5',
+                                        border: '1px solid #ddd',
+                                        borderRadius: '4px',
+                                        padding: '15px',
+                                        maxHeight: '500px',
+                                        overflowY: 'auto',
+                                        fontSize: '13px',
+                                        fontFamily: 'monospace',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word'
+                                    }}>
+                                        {lastAIPrompt}
+                                    </div>
+                                )}
+                                <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
+                                    💡 このプロンプトは最後に実行したAIマッチングで使用されたものです。コピーして別のAIツールで再利用できます。
                                 </div>
                             </div>
                         )}
