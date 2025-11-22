@@ -865,10 +865,11 @@
             );
         };
 
-        // 建物エディタコンポーネント
+        // 建物エディタコンポーネント（全機能）
         const BuildingEditor = ({ data, setData }) => {
             const [activeTab, setActiveTab] = useState('building');
 
+            // 建物情報の更新
             const updateBuilding = (field, value) => {
                 setData(prev => ({
                     ...prev,
@@ -876,6 +877,7 @@
                 }));
             };
 
+            // 階の操作
             const addFloor = () => {
                 setData(prev => ({
                     ...prev,
@@ -899,6 +901,211 @@
                 }));
             };
 
+            // 大ゾーンの操作
+            const addLargeZone = () => {
+                setData(prev => ({
+                    ...prev,
+                    largeZones: [...prev.largeZones, { id: '', name: '', floorId: '', ahuId: '' }]
+                }));
+            };
+
+            const updateLargeZone = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    largeZones: prev.largeZones.map((zone, i) =>
+                        i === index ? { ...zone, [field]: value } : zone
+                    )
+                }));
+            };
+
+            const deleteLargeZone = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    largeZones: prev.largeZones.filter((_, i) => i !== index)
+                }));
+            };
+
+            // 小ゾーンの操作
+            const addSmallZone = () => {
+                setData(prev => ({
+                    ...prev,
+                    smallZones: [...prev.smallZones, { id: '', name: '', largeZoneId: '', vrfId: '' }]
+                }));
+            };
+
+            const updateSmallZone = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    smallZones: prev.smallZones.map((zone, i) =>
+                        i === index ? { ...zone, [field]: value } : zone
+                    )
+                }));
+            };
+
+            const deleteSmallZone = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    smallZones: prev.smallZones.filter((_, i) => i !== index)
+                }));
+            };
+
+            // 部屋の操作
+            const addRoom = () => {
+                setData(prev => ({
+                    ...prev,
+                    rooms: [...prev.rooms, { id: '', name: '', smallZoneId: '', area: 0 }]
+                }));
+            };
+
+            const updateRoom = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    rooms: prev.rooms.map((room, i) =>
+                        i === index ? { ...room, [field]: value } : room
+                    )
+                }));
+            };
+
+            const deleteRoom = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    rooms: prev.rooms.filter((_, i) => i !== index)
+                }));
+            };
+
+            // チラーの操作
+            const addChiller = () => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        chillers: [...prev.centralHVAC.chillers, { id: '', name: '', capacity: 0, powerRating: 0 }]
+                    }
+                }));
+            };
+
+            const updateChiller = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        chillers: prev.centralHVAC.chillers.map((chiller, i) =>
+                            i === index ? { ...chiller, [field]: value } : chiller
+                        )
+                    }
+                }));
+            };
+
+            const deleteChiller = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        chillers: prev.centralHVAC.chillers.filter((_, i) => i !== index)
+                    }
+                }));
+            };
+
+            // AHUの操作
+            const addAHU = () => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        ahus: [...prev.centralHVAC.ahus, { id: '', name: '', chillerId: '', airflow: 0 }]
+                    }
+                }));
+            };
+
+            const updateAHU = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        ahus: prev.centralHVAC.ahus.map((ahu, i) =>
+                            i === index ? { ...ahu, [field]: value } : ahu
+                        )
+                    }
+                }));
+            };
+
+            const deleteAHU = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        ahus: prev.centralHVAC.ahus.filter((_, i) => i !== index)
+                    }
+                }));
+            };
+
+            // VAVの操作
+            const addVAV = () => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        vavs: [...prev.centralHVAC.vavs, { id: '', name: '', ahuId: '', largeZoneId: '' }]
+                    }
+                }));
+            };
+
+            const updateVAV = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        vavs: prev.centralHVAC.vavs.map((vav, i) =>
+                            i === index ? { ...vav, [field]: value } : vav
+                        )
+                    }
+                }));
+            };
+
+            const deleteVAV = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    centralHVAC: {
+                        ...prev.centralHVAC,
+                        vavs: prev.centralHVAC.vavs.filter((_, i) => i !== index)
+                    }
+                }));
+            };
+
+            // VRFの操作
+            const addVRF = () => {
+                setData(prev => ({
+                    ...prev,
+                    individualHVAC: {
+                        ...prev.individualHVAC,
+                        vrfs: [...prev.individualHVAC.vrfs, { id: '', name: '', capacity: 0, powerRating: 0 }]
+                    }
+                }));
+            };
+
+            const updateVRF = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    individualHVAC: {
+                        ...prev.individualHVAC,
+                        vrfs: prev.individualHVAC.vrfs.map((vrf, i) =>
+                            i === index ? { ...vrf, [field]: value } : vrf
+                        )
+                    }
+                }));
+            };
+
+            const deleteVRF = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    individualHVAC: {
+                        ...prev.individualHVAC,
+                        vrfs: prev.individualHVAC.vrfs.filter((_, i) => i !== index)
+                    }
+                }));
+            };
+
+            // センサーの操作
             const addSensor = () => {
                 setData(prev => ({
                     ...prev,
@@ -966,7 +1173,7 @@
                     case 'floors':
                         return (
                             <div className="card">
-                                <h2>階</h2>
+                                <h2>階（{data.floors.length}）</h2>
                                 <button className="btn btn-primary" onClick={addFloor}>階を追加</button>
                                 <div className="table-container">
                                     <table>
@@ -1013,10 +1220,443 @@
                             </div>
                         );
 
+                    case 'zones':
+                        return (
+                            <div>
+                                <div className="card">
+                                    <h2>大ゾーン（全館空調担当）（{data.largeZones.length}）</h2>
+                                    <button className="btn btn-primary" onClick={addLargeZone}>大ゾーン追加</button>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>名称</th>
+                                                    <th>階</th>
+                                                    <th>AHU</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.largeZones.map((zone, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <input
+                                                                value={zone.id}
+                                                                onChange={(e) => updateLargeZone(index, 'id', e.target.value)}
+                                                                placeholder="LargeZone_1A"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={zone.name}
+                                                                onChange={(e) => updateLargeZone(index, 'name', e.target.value)}
+                                                                placeholder="大ゾーン1A(東側エリア)"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={zone.floorId}
+                                                                onChange={(e) => updateLargeZone(index, 'floorId', e.target.value)}
+                                                            >
+                                                                <option value="">階を選択</option>
+                                                                {data.floors.map(f => (
+                                                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={zone.ahuId}
+                                                                onChange={(e) => updateLargeZone(index, 'ahuId', e.target.value)}
+                                                            >
+                                                                <option value="">AHUを選択</option>
+                                                                {data.centralHVAC.ahus.map(a => (
+                                                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <button className="delete-btn" onClick={() => deleteLargeZone(index)}>削除</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="card" style={{marginTop: '20px'}}>
+                                    <h2>小ゾーン（個別空調担当）（{data.smallZones.length}）</h2>
+                                    <button className="btn btn-success" onClick={addSmallZone}>小ゾーン追加</button>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>名称</th>
+                                                    <th>大ゾーン</th>
+                                                    <th>VRF</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.smallZones.map((zone, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <input
+                                                                value={zone.id}
+                                                                onChange={(e) => updateSmallZone(index, 'id', e.target.value)}
+                                                                placeholder="SmallZone_1A1"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={zone.name}
+                                                                onChange={(e) => updateSmallZone(index, 'name', e.target.value)}
+                                                                placeholder="小ゾーン1A1(会議室エリア)"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={zone.largeZoneId}
+                                                                onChange={(e) => updateSmallZone(index, 'largeZoneId', e.target.value)}
+                                                            >
+                                                                <option value="">大ゾーンを選択</option>
+                                                                {data.largeZones.map(lz => (
+                                                                    <option key={lz.id} value={lz.id}>{lz.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={zone.vrfId}
+                                                                onChange={(e) => updateSmallZone(index, 'vrfId', e.target.value)}
+                                                            >
+                                                                <option value="">VRFを選択</option>
+                                                                {data.individualHVAC.vrfs.map(v => (
+                                                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <button className="delete-btn" onClick={() => deleteSmallZone(index)}>削除</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+
+                    case 'rooms':
+                        return (
+                            <div className="card">
+                                <h2>部屋（{data.rooms.length}）</h2>
+                                <button className="btn btn-primary" onClick={addRoom}>部屋を追加</button>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>名称</th>
+                                                <th>小ゾーン</th>
+                                                <th>面積（㎡）</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.rooms.map((room, index) => (
+                                                <tr key={index}>
+                                                    <td>
+                                                        <input
+                                                            value={room.id}
+                                                            onChange={(e) => updateRoom(index, 'id', e.target.value)}
+                                                            placeholder="Room_101"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={room.name}
+                                                            onChange={(e) => updateRoom(index, 'name', e.target.value)}
+                                                            placeholder="会議室101"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <select
+                                                            value={room.smallZoneId}
+                                                            onChange={(e) => updateRoom(index, 'smallZoneId', e.target.value)}
+                                                        >
+                                                            <option value="">小ゾーンを選択</option>
+                                                            {data.smallZones.map(sz => (
+                                                                <option key={sz.id} value={sz.id}>{sz.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={room.area}
+                                                            onChange={(e) => updateRoom(index, 'area', parseFloat(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <button className="delete-btn" onClick={() => deleteRoom(index)}>削除</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        );
+
+                    case 'central':
+                        return (
+                            <div>
+                                <div className="card">
+                                    <h2>チラー（{data.centralHVAC.chillers.length}）</h2>
+                                    <button className="btn btn-primary" onClick={addChiller}>チラー追加</button>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>名称</th>
+                                                    <th>容量（kW）</th>
+                                                    <th>定格電力（kW）</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.centralHVAC.chillers.map((chiller, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <input
+                                                                value={chiller.id}
+                                                                onChange={(e) => updateChiller(index, 'id', e.target.value)}
+                                                                placeholder="Chiller_1"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={chiller.name}
+                                                                onChange={(e) => updateChiller(index, 'name', e.target.value)}
+                                                                placeholder="チラー1号機"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value={chiller.capacity}
+                                                                onChange={(e) => updateChiller(index, 'capacity', parseFloat(e.target.value) || 0)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value={chiller.powerRating}
+                                                                onChange={(e) => updateChiller(index, 'powerRating', parseFloat(e.target.value) || 0)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <button className="delete-btn" onClick={() => deleteChiller(index)}>削除</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="card" style={{marginTop: '20px'}}>
+                                    <h2>外調機（AHU）（{data.centralHVAC.ahus.length}）</h2>
+                                    <button className="btn btn-primary" onClick={addAHU}>AHU追加</button>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>名称</th>
+                                                    <th>チラー</th>
+                                                    <th>風量（m³/h）</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.centralHVAC.ahus.map((ahu, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <input
+                                                                value={ahu.id}
+                                                                onChange={(e) => updateAHU(index, 'id', e.target.value)}
+                                                                placeholder="AHU_1"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={ahu.name}
+                                                                onChange={(e) => updateAHU(index, 'name', e.target.value)}
+                                                                placeholder="外調機1号機"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={ahu.chillerId}
+                                                                onChange={(e) => updateAHU(index, 'chillerId', e.target.value)}
+                                                            >
+                                                                <option value="">チラーを選択</option>
+                                                                {data.centralHVAC.chillers.map(c => (
+                                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                type="number"
+                                                                value={ahu.airflow}
+                                                                onChange={(e) => updateAHU(index, 'airflow', parseFloat(e.target.value) || 0)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <button className="delete-btn" onClick={() => deleteAHU(index)}>削除</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="card" style={{marginTop: '20px'}}>
+                                    <h2>VAV（{data.centralHVAC.vavs.length}）</h2>
+                                    <button className="btn btn-primary" onClick={addVAV}>VAV追加</button>
+                                    <div className="table-container">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>名称</th>
+                                                    <th>AHU</th>
+                                                    <th>大ゾーン</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {data.centralHVAC.vavs.map((vav, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <input
+                                                                value={vav.id}
+                                                                onChange={(e) => updateVAV(index, 'id', e.target.value)}
+                                                                placeholder="VAV_1A1"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                value={vav.name}
+                                                                onChange={(e) => updateVAV(index, 'name', e.target.value)}
+                                                                placeholder="VAV 1A-1"
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={vav.ahuId}
+                                                                onChange={(e) => updateVAV(index, 'ahuId', e.target.value)}
+                                                            >
+                                                                <option value="">AHUを選択</option>
+                                                                {data.centralHVAC.ahus.map(a => (
+                                                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <select
+                                                                value={vav.largeZoneId}
+                                                                onChange={(e) => updateVAV(index, 'largeZoneId', e.target.value)}
+                                                            >
+                                                                <option value="">大ゾーンを選択</option>
+                                                                {data.largeZones.map(lz => (
+                                                                    <option key={lz.id} value={lz.id}>{lz.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <button className="delete-btn" onClick={() => deleteVAV(index)}>削除</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+
+                    case 'individual':
+                        return (
+                            <div className="card">
+                                <h2>VRF（個別空調）（{data.individualHVAC.vrfs.length}）</h2>
+                                <button className="btn btn-success" onClick={addVRF}>VRF追加</button>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>名称</th>
+                                                <th>容量（kW）</th>
+                                                <th>定格電力（kW）</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.individualHVAC.vrfs.map((vrf, index) => (
+                                                <tr key={index}>
+                                                    <td>
+                                                        <input
+                                                            value={vrf.id}
+                                                            onChange={(e) => updateVRF(index, 'id', e.target.value)}
+                                                            placeholder="VRF_Unit_1"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={vrf.name}
+                                                            onChange={(e) => updateVRF(index, 'name', e.target.value)}
+                                                            placeholder="VRF室外機1号機"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={vrf.capacity}
+                                                            onChange={(e) => updateVRF(index, 'capacity', parseFloat(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={vrf.powerRating}
+                                                            onChange={(e) => updateVRF(index, 'powerRating', parseFloat(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <button className="delete-btn" onClick={() => deleteVRF(index)}>削除</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        );
+
                     case 'sensors':
                         return (
                             <div className="card">
-                                <h2>センサー</h2>
+                                <h2>センサー（{data.sensors.length}）</h2>
                                 <button className="btn btn-primary" onClick={addSensor}>センサーを追加</button>
                                 <div className="table-container">
                                     <table>
@@ -1056,6 +1696,7 @@
                                                             <option value="humidity">湿度</option>
                                                             <option value="power">電力</option>
                                                             <option value="flow">流量</option>
+                                                            <option value="position">位置</option>
                                                         </select>
                                                     </td>
                                                     <td>
@@ -1109,6 +1750,30 @@
                                     階
                                 </button>
                                 <button
+                                    className={`tab ${activeTab === 'zones' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('zones')}
+                                >
+                                    ゾーン
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'rooms' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('rooms')}
+                                >
+                                    部屋
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'central' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('central')}
+                                >
+                                    全館空調
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'individual' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('individual')}
+                                >
+                                    個別空調
+                                </button>
+                                <button
                                     className={`tab ${activeTab === 'sensors' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('sensors')}
                                 >
@@ -1120,6 +1785,8 @@
                     </div>
                 </>
             );
+        };
+
         };
 
         // センサーマッピングコンポーネント
