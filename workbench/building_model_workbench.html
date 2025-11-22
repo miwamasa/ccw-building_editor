@@ -539,21 +539,43 @@
             const [apiEndpoint, setApiEndpoint] = useState('');
             const [queryPromptTemplate, setQueryPromptTemplate] = useState(`あなたは建物のセンサー情報を検索・分析するAIアシスタントです。
 
-# 建物データ
+以下の建物データが提供されます：
+<building_data>
 {buildingData}
+</building_data>
 
-# センサーマッピング情報
+以下のセンサーマッピング情報が提供されます：
+<sensor_mapping>
 {sensorMappings}
+</sensor_mapping>
 
-# ユーザーの質問
-{query}
+ユーザーからの質問に基づいて、該当するセンサーを特定し、生成センサー（generated sensor）と対応する物理センサー（physical sensor）の情報を併記してJSON形式で回答してください。
 
-上記の建物データとセンサーマッピング情報を基に、ユーザーの質問に回答してください。
-回答には以下を含めてください：
-- 該当するセンサーの名前とID
-- センサーのタイプと単位
-- マッピングされている具体センサーの情報（ある場合）
-- 設置場所や関連する設備の情報`);
+処理手順：
+1. ユーザーの質問を分析し、求められているセンサーの種類や設置場所を特定する
+2. 建物データのsensorsリストから、質問に該当するセンサーを検索する（センサー名、タイプ、設置場所などを考慮）
+3. 特定した各センサーについて、センサーマッピング情報から対応する物理センサーの情報を取得する
+4. 結果をJSON形式で出力する
+
+出力形式：
+\`\`\`json
+{
+  "sensorlist": [
+    {
+      "generated": "生成センサー名（generatedSensorName）",
+      "concrete": "物理センサー名（physicalSensorName）"
+    }
+  ]
+}
+\`\`\`
+
+注意事項：
+- センサーマッピング情報にない生成センサーの場合は、"concrete"フィールドに"マッピング情報なし"と記載してください
+- 質問に該当するセンサーが複数ある場合は、すべてリストに含めてください
+- センサー名は正確にデータから取得してください
+
+質問：
+{query}`);
 
             // サンプルデータのロード
             const loadSampleData = () => {
@@ -842,10 +864,19 @@
                 // AIレスポンス（シミュレーション）
                 setTimeout(() => {
                     const response = generateAIResponse(message, buildingData, sensorMappings);
+
+                    // デバッグ情報にレスポンスを追加
+                    const debugInfoWithResponse = {
+                        ...debugInfo,
+                        rawResponse: response,
+                        responseLength: response.length,
+                        responseTime: new Date().toISOString()
+                    };
+
                     const assistantMessage = {
                         role: 'assistant',
                         content: response,
-                        debug: debugInfo
+                        debug: debugInfoWithResponse
                     };
                     setChatMessages(prev => [...prev, assistantMessage]);
                 }, 500);
@@ -2051,21 +2082,43 @@
                 if (confirm('プロンプトテンプレートをデフォルトに戻しますか？')) {
                     setPromptTemplate(`あなたは建物のセンサー情報を検索・分析するAIアシスタントです。
 
-# 建物データ
+以下の建物データが提供されます：
+<building_data>
 {buildingData}
+</building_data>
 
-# センサーマッピング情報
+以下のセンサーマッピング情報が提供されます：
+<sensor_mapping>
 {sensorMappings}
+</sensor_mapping>
 
-# ユーザーの質問
-{query}
+ユーザーからの質問に基づいて、該当するセンサーを特定し、生成センサー（generated sensor）と対応する物理センサー（physical sensor）の情報を併記してJSON形式で回答してください。
 
-上記の建物データとセンサーマッピング情報を基に、ユーザーの質問に回答してください。
-回答には以下を含めてください：
-- 該当するセンサーの名前とID
-- センサーのタイプと単位
-- マッピングされている具体センサーの情報（ある場合）
-- 設置場所や関連する設備の情報`);
+処理手順：
+1. ユーザーの質問を分析し、求められているセンサーの種類や設置場所を特定する
+2. 建物データのsensorsリストから、質問に該当するセンサーを検索する（センサー名、タイプ、設置場所などを考慮）
+3. 特定した各センサーについて、センサーマッピング情報から対応する物理センサーの情報を取得する
+4. 結果をJSON形式で出力する
+
+出力形式：
+\`\`\`json
+{
+  "sensorlist": [
+    {
+      "generated": "生成センサー名（generatedSensorName）",
+      "concrete": "物理センサー名（physicalSensorName）"
+    }
+  ]
+}
+\`\`\`
+
+注意事項：
+- センサーマッピング情報にない生成センサーの場合は、"concrete"フィールドに"マッピング情報なし"と記載してください
+- 質問に該当するセンサーが複数ある場合は、すべてリストに含めてください
+- センサー名は正確にデータから取得してください
+
+質問：
+{query}`);
                     alert('デフォルトテンプレートに戻しました');
                 }
             };
@@ -2232,6 +2285,9 @@
                                                         <span style={{fontWeight: 'bold'}}>マッピング数:</span>
                                                         <span>{msg.debug.sensorMappingsCount}</span>
 
+                                                        <span style={{fontWeight: 'bold'}}>レスポンス長:</span>
+                                                        <span>{msg.debug.responseLength} 文字</span>
+
                                                         <span style={{fontWeight: 'bold'}}>タイムスタンプ:</span>
                                                         <span>{new Date(msg.debug.timestamp).toLocaleString('ja-JP')}</span>
                                                     </div>
@@ -2270,6 +2326,37 @@
                                                                     wordWrap: 'break-word'
                                                                 }}>
                                                                     {msg.debug.promptTemplate}
+                                                                </pre>
+                                                            </div>
+                                                            <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #bfdbfe'}}>
+                                                                <strong style={{color: '#1e40af'}}>APIレスポンス:</strong>
+                                                                <div style={{
+                                                                    marginTop: '8px',
+                                                                    display: 'grid',
+                                                                    gridTemplateColumns: 'auto 1fr',
+                                                                    gap: '4px 12px',
+                                                                    fontSize: '11px',
+                                                                    color: '#475569',
+                                                                    marginBottom: '8px'
+                                                                }}>
+                                                                    <span style={{fontWeight: 'bold'}}>レスポンス長:</span>
+                                                                    <span>{msg.debug.responseLength} 文字</span>
+                                                                    <span style={{fontWeight: 'bold'}}>レスポンス時刻:</span>
+                                                                    <span>{new Date(msg.debug.responseTime).toLocaleString('ja-JP')}</span>
+                                                                </div>
+                                                                <pre style={{
+                                                                    marginTop: '8px',
+                                                                    padding: '8px',
+                                                                    background: '#fff',
+                                                                    border: '1px solid #e2e8f0',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '11px',
+                                                                    maxHeight: '300px',
+                                                                    overflow: 'auto',
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    wordWrap: 'break-word'
+                                                                }}>
+                                                                    {msg.debug.rawResponse}
                                                                 </pre>
                                                             </div>
                                                         </>
