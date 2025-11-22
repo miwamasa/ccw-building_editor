@@ -833,63 +833,40 @@
                 return matches / longer.length;
             };
 
-            // 実際のAI API呼び出し
+            // バックエンドサーバー経由でAI API呼び出し
             const callActualAPI = async (prompt, provider, model, endpoint, key) => {
                 try {
-                    if (provider === 'openai') {
-                        const response = await fetch(`${endpoint}/chat/completions`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${key}`
-                            },
-                            body: JSON.stringify({
-                                model: model,
-                                messages: [{ role: 'user', content: prompt }],
-                                temperature: 0.7
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.error) {
-                            throw new Error(data.error.message || 'API Error');
-                        }
-                        return data.choices[0].message.content;
-                    } else if (provider === 'anthropic') {
-                        const response = await fetch(`${endpoint}/messages`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-api-key': key,
-                                'anthropic-version': '2023-06-01'
-                            },
-                            body: JSON.stringify({
-                                model: model,
-                                max_tokens: 4096,
-                                messages: [{ role: 'user', content: prompt }]
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.error) {
-                            throw new Error(data.error.message || 'API Error');
-                        }
-                        return data.content[0].text;
-                    } else if (provider === 'google') {
-                        const response = await fetch(`${endpoint}/models/${model}:generateContent?key=${key}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }]
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.error) {
-                            throw new Error(data.error.message || 'API Error');
-                        }
-                        return data.candidates[0].content.parts[0].text;
+                    // バックエンドサーバーのURL（デフォルトはlocalhost:3001）
+                    const backendURL = window.location.origin;
+                    const proxyEndpoint = `${backendURL}/api/${provider}`;
+
+                    console.log(`Calling backend proxy: ${proxyEndpoint}`);
+
+                    const response = await fetch(proxyEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: key,
+                            model: model,
+                            prompt: prompt,
+                            endpoint: endpoint || undefined
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.error || data.message || 'API Error');
                     }
+
+                    return data.content;
                 } catch (error) {
+                    // ネットワークエラーやサーバー接続エラーの詳細表示
+                    if (error.message.includes('Failed to fetch')) {
+                        throw new Error('バックエンドサーバーに接続できません。サーバーが起動しているか確認してください。(http://localhost:3001)');
+                    }
                     throw error;
                 }
             };
@@ -949,27 +926,28 @@
                     } catch (error) {
                         // APIエラー時
                         let errorMessage = `❌ API呼び出しエラー: ${error.message}\n\n`;
-                        let isCORSError = false;
+                        let isServerError = false;
 
-                        // CORSエラーの検出
-                        if (error.message.includes('Failed to fetch') ||
-                            error.message.includes('NetworkError') ||
-                            error.message.includes('CORS') ||
-                            error.name === 'TypeError') {
-                            isCORSError = true;
-                            errorMessage += `🚫 CORS（Cross-Origin Resource Sharing）エラーが発生しました。\n\n`;
-                            errorMessage += `これはブラウザのセキュリティ制限により、直接API呼び出しができないためです。\n\n`;
+                        // バックエンドサーバー接続エラーの検出
+                        if (error.message.includes('バックエンドサーバーに接続できません')) {
+                            isServerError = true;
+                            errorMessage += `🔌 バックエンドサーバーが起動していない可能性があります。\n\n`;
                             errorMessage += `解決方法:\n`;
-                            errorMessage += `1. CORSプロキシを使用: カスタムエンドポイントに以下を設定\n`;
-                            errorMessage += `   https://cors-anywhere.herokuapp.com/${actualEndpoint.replace('https://', '')}\n\n`;
-                            errorMessage += `2. ローカルプロキシサーバーを立てる\n`;
-                            errorMessage += `3. ブラウザ拡張機能 "CORS Unblock" を使用\n`;
-                            errorMessage += `4. シミュレーションモード（APIキーを削除）を使用\n\n`;
-                            errorMessage += `詳細は「API設定」画面の警告メッセージを参照してください。\n`;
+                            errorMessage += `1. ターミナルを開く\n`;
+                            errorMessage += `2. workbenchディレクトリに移動: cd workbench\n`;
+                            errorMessage += `3. npm install で依存パッケージをインストール（初回のみ）\n`;
+                            errorMessage += `4. npm start でサーバーを起動\n`;
+                            errorMessage += `5. http://localhost:3001/building_model_workbench.html でアクセス\n\n`;
+                            errorMessage += `詳細は README_SERVER.md を参照してください。\n`;
                         } else {
                             errorMessage += `プロバイダー: ${apiProvider}\n`;
                             errorMessage += `モデル: ${apiModel}\n`;
-                            errorMessage += `エンドポイント: ${actualEndpoint}\n`;
+                            errorMessage += `バックエンドURL: ${window.location.origin}/api/${apiProvider}\n\n`;
+                            errorMessage += `考えられる原因:\n`;
+                            errorMessage += `- APIキーが正しくない\n`;
+                            errorMessage += `- モデル名が正しくない\n`;
+                            errorMessage += `- API利用制限に達している\n`;
+                            errorMessage += `- ネットワーク接続の問題\n`;
                         }
 
                         const debugInfoWithError = {
@@ -979,7 +957,7 @@
                             responseTime: new Date().toISOString(),
                             apiCallSuccess: false,
                             errorMessage: error.message,
-                            isCORSError: isCORSError,
+                            isServerError: isServerError,
                             errorType: error.name
                         };
 
@@ -2433,9 +2411,9 @@
                                                             </>
                                                         )}
 
-                                                        {msg.debug.isCORSError && (
+                                                        {msg.debug.isServerError && (
                                                             <>
-                                                                <span style={{fontWeight: 'bold'}}>CORSエラー:</span>
+                                                                <span style={{fontWeight: 'bold'}}>サーバーエラー:</span>
                                                                 <span style={{
                                                                     color: '#dc2626',
                                                                     fontSize: '12px',
@@ -2444,7 +2422,7 @@
                                                                     padding: '2px 6px',
                                                                     borderRadius: '3px'
                                                                 }}>
-                                                                    🚫 ブラウザセキュリティ制限 - API設定を確認
+                                                                    🔌 バックエンドサーバー未起動 - npm start で起動
                                                                 </span>
                                                             </>
                                                         )}
@@ -2660,23 +2638,27 @@
                             </div>
                         )}
 
-                        <div className="api-config" style={{background: '#fef3c7', border: '1px solid #f59e0b'}}>
-                            <h3>⚠️ CORS制限について（重要）</h3>
-                            <p style={{fontSize: '13px', color: '#92400e', marginTop: '8px', marginBottom: '8px'}}>
-                                <strong>ブラウザから直接API呼び出しを行うとCORSエラーが発生します。</strong>
-                                これはブラウザのセキュリティ機能による制限です。
+                        <div className="api-config" style={{background: '#dcfce7', border: '1px solid #22c55e'}}>
+                            <h3>✅ バックエンドサーバー経由でAPI呼び出し</h3>
+                            <p style={{fontSize: '13px', color: '#166534', marginTop: '8px', marginBottom: '8px'}}>
+                                <strong>このアプリケーションはバックエンドサーバー経由でAPI呼び出しを行います。</strong>
+                                CORSエラーの心配はありません。
                             </p>
-                            <p style={{fontSize: '12px', color: '#92400e', marginBottom: '8px'}}>
-                                <strong>解決方法（いずれかを選択）:</strong>
+                            <p style={{fontSize: '12px', color: '#166534', marginBottom: '8px'}}>
+                                <strong>サーバーの起動方法:</strong>
                             </p>
-                            <ul style={{fontSize: '12px', color: '#92400e', marginLeft: '20px', marginBottom: '8px'}}>
-                                <li><strong>方法1: CORSプロキシを使用</strong> - カスタムエンドポイントに <code>https://cors-anywhere.herokuapp.com/</code> + 元のURL を設定（開発用のみ推奨）</li>
-                                <li><strong>方法2: ローカルプロキシサーバーを立てる</strong> - Node.js等でプロキシサーバーを作成し、カスタムエンドポイントに指定</li>
-                                <li><strong>方法3: ブラウザ拡張機能</strong> - "CORS Unblock" 等の拡張機能を使用（セキュリティリスクあり）</li>
-                                <li><strong>方法4: シミュレーションモード</strong> - APIキーを設定せず、簡易的なダミー応答を使用</li>
-                            </ul>
-                            <p style={{fontSize: '12px', color: '#92400e'}}>
-                                <strong>推奨:</strong> 本番環境では必ずバックエンドサーバーを経由してAPI呼び出しを行ってください。
+                            <ol style={{fontSize: '12px', color: '#166534', marginLeft: '20px', marginBottom: '8px'}}>
+                                <li>ターミナルを開く</li>
+                                <li><code>cd workbench</code> でディレクトリに移動</li>
+                                <li><code>npm install</code> で依存パッケージをインストール（初回のみ）</li>
+                                <li><code>npm start</code> でサーバーを起動</li>
+                                <li>ブラウザで <code>http://localhost:3001/building_model_workbench.html</code> にアクセス</li>
+                            </ol>
+                            <p style={{fontSize: '12px', color: '#166534'}}>
+                                <strong>セキュリティ:</strong> APIキーはバックエンドサーバーが安全に管理します。ブラウザに露出しません。
+                            </p>
+                            <p style={{fontSize: '12px', color: '#166534', marginTop: '8px'}}>
+                                詳細は <code>README_SERVER.md</code> を参照してください。
                             </p>
                         </div>
 
