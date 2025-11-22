@@ -819,12 +819,50 @@
                 const userMessage = { role: 'user', content: message };
                 setChatMessages(prev => [...prev, userMessage]);
 
+                // プロンプトテンプレートに変数を埋め込んで実際のプロンプトを生成
+                const actualPrompt = queryPromptTemplate
+                    .replace('{buildingData}', JSON.stringify(buildingData, null, 2))
+                    .replace('{sensorMappings}', JSON.stringify(sensorMappings, null, 2))
+                    .replace('{query}', message);
+
+                // デバッグ情報を準備
+                const debugInfo = {
+                    timestamp: new Date().toISOString(),
+                    provider: apiProvider,
+                    model: apiModel,
+                    endpoint: apiEndpoint || getDefaultEndpoint(apiProvider),
+                    hasApiKey: !!apiKey,
+                    promptTemplate: queryPromptTemplate,
+                    actualPrompt: actualPrompt,
+                    buildingDataSize: JSON.stringify(buildingData).length,
+                    sensorMappingsCount: sensorMappings.length,
+                    mode: apiKey ? 'API Mode' : 'Simulation Mode'
+                };
+
                 // AIレスポンス（シミュレーション）
                 setTimeout(() => {
                     const response = generateAIResponse(message, buildingData, sensorMappings);
-                    const assistantMessage = { role: 'assistant', content: response };
+                    const assistantMessage = {
+                        role: 'assistant',
+                        content: response,
+                        debug: debugInfo
+                    };
                     setChatMessages(prev => [...prev, assistantMessage]);
                 }, 500);
+            };
+
+            // デフォルトエンドポイント取得関数
+            const getDefaultEndpoint = (provider) => {
+                switch (provider) {
+                    case 'openai':
+                        return 'https://api.openai.com/v1';
+                    case 'anthropic':
+                        return 'https://api.anthropic.com/v1';
+                    case 'google':
+                        return 'https://generativelanguage.googleapis.com/v1';
+                    default:
+                        return '';
+                }
             };
 
             // AI応答生成（シミュレーション）
@@ -1999,6 +2037,8 @@
             const [inputMessage, setInputMessage] = useState('');
             const [showPromptEditor, setShowPromptEditor] = useState(false);
             const [showPromptPreview, setShowPromptPreview] = useState(false);
+            const [debugMode, setDebugMode] = useState(false);
+            const [expandedDebug, setExpandedDebug] = useState({});
 
             const handleSend = () => {
                 if (inputMessage.trim()) {
@@ -2038,10 +2078,25 @@
                     .replace('{query}', exampleQuery);
             };
 
+            const toggleDebugExpand = (index) => {
+                setExpandedDebug(prev => ({
+                    ...prev,
+                    [index]: !prev[index]
+                }));
+            };
+
             return (
                 <>
                     <div className="toolbar">
                         <h2 style={{flex: 1, fontSize: '18px'}}>自然言語クエリ</h2>
+                        <button
+                            className={`btn ${debugMode ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setDebugMode(!debugMode)}
+                            style={{marginRight: '8px'}}
+                            title="デバッグ情報の表示/非表示を切り替え"
+                        >
+                            {debugMode ? '🐛 デバッグON' : '🐛 デバッグ'}
+                        </button>
                         <button
                             className="btn btn-secondary"
                             onClick={() => setShowPromptEditor(!showPromptEditor)}
@@ -2123,8 +2178,104 @@
                                     </div>
                                 ) : (
                                     messages.map((msg, index) => (
-                                        <div key={index} className={`chat-message ${msg.role}`}>
-                                            {msg.content}
+                                        <div key={index}>
+                                            <div className={`chat-message ${msg.role}`}>
+                                                {msg.content}
+                                            </div>
+                                            {debugMode && msg.debug && (
+                                                <div style={{
+                                                    margin: '8px 20px',
+                                                    padding: '12px',
+                                                    background: '#f0f9ff',
+                                                    border: '1px solid #bfdbfe',
+                                                    borderRadius: '4px',
+                                                    fontSize: '12px'
+                                                }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        marginBottom: '8px',
+                                                        cursor: 'pointer'
+                                                    }} onClick={() => toggleDebugExpand(index)}>
+                                                        <strong style={{color: '#1e40af'}}>🐛 デバッグ情報</strong>
+                                                        <span style={{color: '#64748b'}}>
+                                                            {expandedDebug[index] ? '▼ 閉じる' : '▶ 展開'}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'auto 1fr',
+                                                        gap: '4px 12px',
+                                                        color: '#475569'
+                                                    }}>
+                                                        <span style={{fontWeight: 'bold'}}>モード:</span>
+                                                        <span style={{color: msg.debug.mode === 'API Mode' ? '#16a34a' : '#dc2626'}}>
+                                                            {msg.debug.mode}
+                                                        </span>
+
+                                                        <span style={{fontWeight: 'bold'}}>プロバイダー:</span>
+                                                        <span>{msg.debug.provider}</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>モデル:</span>
+                                                        <span>{msg.debug.model}</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>エンドポイント:</span>
+                                                        <span style={{wordBreak: 'break-all'}}>{msg.debug.endpoint}</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>APIキー:</span>
+                                                        <span>{msg.debug.hasApiKey ? '設定済み ✓' : '未設定 ✗'}</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>データサイズ:</span>
+                                                        <span>{(msg.debug.buildingDataSize / 1024).toFixed(2)} KB</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>マッピング数:</span>
+                                                        <span>{msg.debug.sensorMappingsCount}</span>
+
+                                                        <span style={{fontWeight: 'bold'}}>タイムスタンプ:</span>
+                                                        <span>{new Date(msg.debug.timestamp).toLocaleString('ja-JP')}</span>
+                                                    </div>
+
+                                                    {expandedDebug[index] && (
+                                                        <>
+                                                            <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #bfdbfe'}}>
+                                                                <strong style={{color: '#1e40af'}}>実際に送信されるプロンプト:</strong>
+                                                                <pre style={{
+                                                                    marginTop: '8px',
+                                                                    padding: '8px',
+                                                                    background: '#fff',
+                                                                    border: '1px solid #e2e8f0',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '11px',
+                                                                    maxHeight: '400px',
+                                                                    overflow: 'auto',
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    wordWrap: 'break-word'
+                                                                }}>
+                                                                    {msg.debug.actualPrompt}
+                                                                </pre>
+                                                            </div>
+                                                            <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #bfdbfe'}}>
+                                                                <strong style={{color: '#1e40af'}}>プロンプトテンプレート:</strong>
+                                                                <pre style={{
+                                                                    marginTop: '8px',
+                                                                    padding: '8px',
+                                                                    background: '#fff',
+                                                                    border: '1px solid #e2e8f0',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '11px',
+                                                                    maxHeight: '200px',
+                                                                    overflow: 'auto',
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    wordWrap: 'break-word'
+                                                                }}>
+                                                                    {msg.debug.promptTemplate}
+                                                                </pre>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}
