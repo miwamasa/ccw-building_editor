@@ -833,8 +833,69 @@
                 return matches / longer.length;
             };
 
+            // 実際のAI API呼び出し
+            const callActualAPI = async (prompt, provider, model, endpoint, key) => {
+                try {
+                    if (provider === 'openai') {
+                        const response = await fetch(`${endpoint}/chat/completions`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${key}`
+                            },
+                            body: JSON.stringify({
+                                model: model,
+                                messages: [{ role: 'user', content: prompt }],
+                                temperature: 0.7
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.error) {
+                            throw new Error(data.error.message || 'API Error');
+                        }
+                        return data.choices[0].message.content;
+                    } else if (provider === 'anthropic') {
+                        const response = await fetch(`${endpoint}/messages`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-api-key': key,
+                                'anthropic-version': '2023-06-01'
+                            },
+                            body: JSON.stringify({
+                                model: model,
+                                max_tokens: 4096,
+                                messages: [{ role: 'user', content: prompt }]
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.error) {
+                            throw new Error(data.error.message || 'API Error');
+                        }
+                        return data.content[0].text;
+                    } else if (provider === 'google') {
+                        const response = await fetch(`${endpoint}/models/${model}:generateContent?key=${key}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }]
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.error) {
+                            throw new Error(data.error.message || 'API Error');
+                        }
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                } catch (error) {
+                    throw error;
+                }
+            };
+
             // チャット送信
-            const sendChatMessage = (message) => {
+            const sendChatMessage = async (message) => {
                 if (!message.trim()) return;
 
                 // ユーザーメッセージを追加
@@ -847,39 +908,86 @@
                     .replace('{sensorMappings}', JSON.stringify(sensorMappings, null, 2))
                     .replace('{query}', message);
 
+                const isAPIMode = !!apiKey;
+                const actualEndpoint = apiEndpoint || getDefaultEndpoint(apiProvider);
+
                 // デバッグ情報を準備
                 const debugInfo = {
                     timestamp: new Date().toISOString(),
                     provider: apiProvider,
                     model: apiModel,
-                    endpoint: apiEndpoint || getDefaultEndpoint(apiProvider),
-                    hasApiKey: !!apiKey,
+                    endpoint: actualEndpoint,
+                    hasApiKey: isAPIMode,
                     promptTemplate: queryPromptTemplate,
                     actualPrompt: actualPrompt,
                     buildingDataSize: JSON.stringify(buildingData).length,
                     sensorMappingsCount: sensorMappings.length,
-                    mode: apiKey ? 'API Mode' : 'Simulation Mode'
+                    mode: isAPIMode ? 'API Mode (実際のAI API使用)' : 'Simulation Mode (ダミー応答)'
                 };
 
-                // AIレスポンス（シミュレーション）
-                setTimeout(() => {
-                    const response = generateAIResponse(message, buildingData, sensorMappings);
+                // AIレスポンス取得
+                if (isAPIMode) {
+                    // 実際のAPI呼び出し
+                    try {
+                        const response = await callActualAPI(actualPrompt, apiProvider, apiModel, actualEndpoint, apiKey);
 
-                    // デバッグ情報にレスポンスを追加
-                    const debugInfoWithResponse = {
-                        ...debugInfo,
-                        rawResponse: response,
-                        responseLength: response.length,
-                        responseTime: new Date().toISOString()
-                    };
+                        // デバッグ情報にレスポンスを追加
+                        const debugInfoWithResponse = {
+                            ...debugInfo,
+                            rawResponse: response,
+                            responseLength: response.length,
+                            responseTime: new Date().toISOString(),
+                            apiCallSuccess: true
+                        };
 
-                    const assistantMessage = {
-                        role: 'assistant',
-                        content: response,
-                        debug: debugInfoWithResponse
-                    };
-                    setChatMessages(prev => [...prev, assistantMessage]);
-                }, 500);
+                        const assistantMessage = {
+                            role: 'assistant',
+                            content: response,
+                            debug: debugInfoWithResponse
+                        };
+                        setChatMessages(prev => [...prev, assistantMessage]);
+                    } catch (error) {
+                        // APIエラー時
+                        const errorMessage = `❌ API呼び出しエラー: ${error.message}\n\nプロバイダー: ${apiProvider}\nモデル: ${apiModel}\nエンドポイント: ${actualEndpoint}`;
+
+                        const debugInfoWithError = {
+                            ...debugInfo,
+                            rawResponse: errorMessage,
+                            responseLength: errorMessage.length,
+                            responseTime: new Date().toISOString(),
+                            apiCallSuccess: false,
+                            errorMessage: error.message
+                        };
+
+                        const assistantMessage = {
+                            role: 'assistant',
+                            content: errorMessage,
+                            debug: debugInfoWithError
+                        };
+                        setChatMessages(prev => [...prev, assistantMessage]);
+                    }
+                } else {
+                    // シミュレーションモード
+                    setTimeout(() => {
+                        const response = generateAIResponse(message, buildingData, sensorMappings);
+
+                        const debugInfoWithResponse = {
+                            ...debugInfo,
+                            rawResponse: response,
+                            responseLength: response.length,
+                            responseTime: new Date().toISOString(),
+                            apiCallSuccess: false,
+                            simulationNote: 'APIキーが設定されていないためダミー応答を返しています'
+                        };
+
+                        const assistantMessage = {
+                            role: 'assistant',
+                            content: response,
+                            debug: debugInfoWithResponse
+                        };
+                        setChatMessages(prev => [...prev, assistantMessage]);
+                    }, 500);
+                }
             };
 
             // デフォルトエンドポイント取得関数
@@ -2263,9 +2371,43 @@
                                                         color: '#475569'
                                                     }}>
                                                         <span style={{fontWeight: 'bold'}}>モード:</span>
-                                                        <span style={{color: msg.debug.mode === 'API Mode' ? '#16a34a' : '#dc2626'}}>
+                                                        <span style={{
+                                                            color: msg.debug.mode.includes('API Mode') ? '#16a34a' : '#dc2626',
+                                                            fontWeight: 'bold',
+                                                            fontSize: '13px'
+                                                        }}>
                                                             {msg.debug.mode}
                                                         </span>
+
+                                                        {msg.debug.apiCallSuccess !== undefined && (
+                                                            <>
+                                                                <span style={{fontWeight: 'bold'}}>API呼び出し:</span>
+                                                                <span style={{
+                                                                    color: msg.debug.apiCallSuccess ? '#16a34a' : '#dc2626',
+                                                                    fontWeight: 'bold'
+                                                                }}>
+                                                                    {msg.debug.apiCallSuccess ? '✓ 成功' : '✗ 失敗/未実行'}
+                                                                </span>
+                                                            </>
+                                                        )}
+
+                                                        {msg.debug.simulationNote && (
+                                                            <>
+                                                                <span style={{fontWeight: 'bold'}}>注意:</span>
+                                                                <span style={{color: '#dc2626', fontSize: '12px'}}>
+                                                                    {msg.debug.simulationNote}
+                                                                </span>
+                                                            </>
+                                                        )}
+
+                                                        {msg.debug.errorMessage && (
+                                                            <>
+                                                                <span style={{fontWeight: 'bold'}}>エラー:</span>
+                                                                <span style={{color: '#dc2626', fontSize: '12px'}}>
+                                                                    {msg.debug.errorMessage}
+                                                                </span>
+                                                            </>
+                                                        )}
 
                                                         <span style={{fontWeight: 'bold'}}>プロバイダー:</span>
                                                         <span>{msg.debug.provider}</span>
