@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>建物モデルワークベンチ - Building Model Workbench</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .sidebar-section h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-button {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 6px;
+            background: #f5f5f5;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-button:hover {
+            background: #e0e0e0;
+        }
+
+        .nav-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td input,
+        td select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .delete-btn {
+            background: #f56565;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #e53e3e;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .chat-message {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .chat-message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+
+        .chat-message.assistant {
+            background: white;
+            border: 1px solid #e0e0e0;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .mapping-result {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .mapping-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .confidence-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .confidence-high {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .confidence-medium {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .confidence-low {
+            background: #fecaca;
+            color: #991b1b;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .json-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #e0e0e0;
+            color: #333;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            background: #d0d0d0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-connected {
+            background: #48bb78;
+        }
+
+        .status-disconnected {
+            background: #f56565;
+        }
+
+        .api-config {
+            background: #fffbeb;
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .api-config h3 {
+            font-size: 14px;
+            color: #92400e;
+            margin-bottom: 12px;
+        }
+
+        .instruction-box {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .instruction-box h3 {
+            font-size: 16px;
+            color: #0c4a6e;
+            margin-bottom: 8px;
+        }
+
+        .instruction-box p {
+            font-size: 14px;
+            color: #075985;
+            line-height: 1.6;
+        }
+
+        .sensor-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .sensor-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sensor-item:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // メインアプリケーションコンポーネント
+        const BuildingModelWorkbench = () => {
+            const [currentView, setCurrentView] = useState('editor');
+            const [buildingData, setBuildingData] = useState({
+                building: { id: '', name: '', location: '', totalArea: 0 },
+                floors: [],
+                largeZones: [],
+                smallZones: [],
+                rooms: [],
+                centralHVAC: { chillers: [], ahus: [], vavs: [] },
+                individualHVAC: { vrfs: [] },
+                sensors: []
+            });
+            const [physicalSensors, setPhysicalSensors] = useState([]);
+            const [sensorMappings, setSensorMappings] = useState([]);
+            const [chatMessages, setChatMessages] = useState([]);
+            const [apiKey, setApiKey] = useState('');
+
+            // サンプルデータのロード
+            const loadSampleData = () => {
+                const sample = {
+                    building: {
+                        id: 'Building_A',
+                        name: '東京グリーンタワー',
+                        location: '東京都千代田区',
+                        totalArea: 2400
+                    },
+                    floors: [
+                        { id: 'Floor_1', name: '1階', area: 1200 },
+                        { id: 'Floor_2', name: '2階', area: 1200 }
+                    ],
+                    largeZones: [
+                        { id: 'LargeZone_1A', name: '大ゾーン1A(東側エリア)', floorId: 'Floor_1', ahuId: 'AHU_1' },
+                        { id: 'LargeZone_1B', name: '大ゾーン1B(西側エリア)', floorId: 'Floor_1', ahuId: 'AHU_1' },
+                        { id: 'LargeZone_2A', name: '大ゾーン2A(全フロア)', floorId: 'Floor_2', ahuId: 'AHU_2' }
+                    ],
+                    smallZones: [
+                        { id: 'SmallZone_1A1', name: '小ゾーン1A1(会議室エリア)', largeZoneId: 'LargeZone_1A', vrfId: 'VRF_Unit_1' },
+                        { id: 'SmallZone_1A2', name: '小ゾーン1A2(オフィスエリア)', largeZoneId: 'LargeZone_1A', vrfId: 'VRF_Unit_1' },
+                        { id: 'SmallZone_1B1', name: '小ゾーン1B1(執務室エリア)', largeZoneId: 'LargeZone_1B', vrfId: 'VRF_Unit_1' }
+                    ],
+                    rooms: [
+                        { id: 'Room_101', name: '会議室101', smallZoneId: 'SmallZone_1A1', area: 30 },
+                        { id: 'Room_102', name: '会議室102', smallZoneId: 'SmallZone_1A1', area: 30 },
+                        { id: 'Room_103', name: 'オフィス103', smallZoneId: 'SmallZone_1A2', area: 50 }
+                    ],
+                    centralHVAC: {
+                        chillers: [
+                            { id: 'Chiller_1', name: 'チラー1号機', capacity: 150, powerRating: 50 }
+                        ],
+                        ahus: [
+                            { id: 'AHU_1', name: '外調機1号機(1階担当)', chillerId: 'Chiller_1', airflow: 10000 },
+                            { id: 'AHU_2', name: '外調機2号機(2階担当)', chillerId: 'Chiller_1', airflow: 8000 }
+                        ],
+                        vavs: [
+                            { id: 'VAV_1A1', name: 'VAV 1A-1', ahuId: 'AHU_1', largeZoneId: 'LargeZone_1A' }
+                        ]
+                    },
+                    individualHVAC: {
+                        vrfs: [
+                            { id: 'VRF_Unit_1', name: 'VRF室外機1号機', capacity: 40, powerRating: 15 }
+                        ]
+                    },
+                    sensors: [
+                        { id: 'AHU1_Outside_Air_Temp', name: '外調機1_外気温度センサー', type: 'temperature', equipmentId: 'AHU_1', unit: '°C' },
+                        { id: 'AHU1_Supply_Air_Temp', name: '外調機1_給気温度センサー', type: 'temperature', equipmentId: 'AHU_1', unit: '°C' },
+                        { id: 'Room_101_Temp', name: '会議室101_室温センサー', type: 'temperature', equipmentId: 'Room_101', unit: '°C' }
+                    ]
+                };
+                setBuildingData(sample);
+                alert('サンプルデータを読み込みました');
+            };
+
+            // JSONエクスポート
+            const exportJSON = () => {
+                const dataStr = JSON.stringify(buildingData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `building_data_${buildingData.building.id}.json`;
+                link.click();
+            };
+
+            // JSONインポート
+            const importJSON = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            setBuildingData(data);
+                            alert('JSONデータを読み込みました');
+                        } catch (error) {
+                            alert('JSONファイルの読み込みに失敗しました');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            // CSVインポート（具体センサー）
+            const importPhysicalSensorsCSV = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const text = e.target.result;
+                        const lines = text.split('\\n').filter(line => line.trim());
+                        const headers = lines[0].split(',');
+                        const sensors = lines.slice(1).map(line => {
+                            const values = line.split(',');
+                            return {
+                                id: values[0]?.trim(),
+                                name: values[1]?.trim(),
+                                type: values[2]?.trim(),
+                                location: values[3]?.trim(),
+                                unit: values[4]?.trim()
+                            };
+                        }).filter(s => s.id);
+                        setPhysicalSensors(sensors);
+                        alert(`${sensors.length}個の具体センサーを読み込みました`);
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            // AI センサーマッピング（シミュレーション）
+            const performSensorMapping = () => {
+                if (!apiKey) {
+                    alert('API設定でAPIキーを入力してください');
+                    return;
+                }
+
+                if (physicalSensors.length === 0) {
+                    alert('具体センサーCSVをインポートしてください');
+                    return;
+                }
+
+                if (buildingData.sensors.length === 0) {
+                    alert('建物エディタでセンサーを追加してください');
+                    return;
+                }
+
+                // AIマッピングのシミュレーション（実際のAI実装では、APIを呼び出す）
+                const mappings = [];
+                buildingData.sensors.forEach(genSensor => {
+                    // 簡易的なマッチングロジック（タイプと名前の類似性）
+                    physicalSensors.forEach(physSensor => {
+                        if (genSensor.type === physSensor.type) {
+                            const confidence = calculateSimilarity(genSensor.name, physSensor.name);
+                            if (confidence > 0.5) {
+                                mappings.push({
+                                    generatedSensorId: genSensor.id,
+                                    generatedSensorName: genSensor.name,
+                                    physicalSensorId: physSensor.id,
+                                    physicalSensorName: physSensor.name,
+                                    confidence: confidence,
+                                    reason: `タイプ一致: ${genSensor.type}, 名前類似度: ${(confidence * 100).toFixed(0)}%`
+                                });
+                            }
+                        }
+                    });
+                });
+
+                // 各生成センサーに対して最も信頼度の高いマッピングのみを残す
+                const bestMappings = {};
+                mappings.forEach(mapping => {
+                    const key = mapping.generatedSensorId;
+                    if (!bestMappings[key] || bestMappings[key].confidence < mapping.confidence) {
+                        bestMappings[key] = mapping;
+                    }
+                });
+
+                setSensorMappings(Object.values(bestMappings));
+                alert(`${Object.keys(bestMappings).length}個のマッピングを生成しました`);
+            };
+
+            // 簡易的な文字列類似度計算
+            const calculateSimilarity = (str1, str2) => {
+                const longer = str1.length > str2.length ? str1 : str2;
+                const shorter = str1.length > str2.length ? str2 : str1;
+
+                if (longer.length === 0) return 1.0;
+
+                let matches = 0;
+                for (let i = 0; i < shorter.length; i++) {
+                    if (longer.includes(shorter[i])) matches++;
+                }
+
+                return matches / longer.length;
+            };
+
+            // チャット送信
+            const sendChatMessage = (message) => {
+                if (!message.trim()) return;
+
+                // ユーザーメッセージを追加
+                const userMessage = { role: 'user', content: message };
+                setChatMessages(prev => [...prev, userMessage]);
+
+                // AIレスポンス（シミュレーション）
+                setTimeout(() => {
+                    const response = generateAIResponse(message, buildingData, sensorMappings);
+                    const assistantMessage = { role: 'assistant', content: response };
+                    setChatMessages(prev => [...prev, assistantMessage]);
+                }, 500);
+            };
+
+            // AI応答生成（シミュレーション）
+            const generateAIResponse = (query, data, mappings) => {
+                const lowerQuery = query.toLowerCase();
+
+                // 温度センサーの検索
+                if (lowerQuery.includes('温度') || lowerQuery.includes('気温')) {
+                    const tempSensors = data.sensors.filter(s => s.type === 'temperature');
+                    if (tempSensors.length > 0) {
+                        let response = `${tempSensors.length}個の温度センサーが見つかりました:\\n\\n`;
+                        tempSensors.forEach(sensor => {
+                            response += `- ${sensor.name} (ID: ${sensor.id})\\n`;
+                            const mapping = mappings.find(m => m.generatedSensorId === sensor.id);
+                            if (mapping) {
+                                response += `  → 具体センサー: ${mapping.physicalSensorName} (信頼度: ${(mapping.confidence * 100).toFixed(0)}%)\\n`;
+                            }
+                        });
+                        return response;
+                    }
+                }
+
+                // 会議室の検索
+                if (lowerQuery.includes('会議室')) {
+                    const meetingRooms = data.rooms.filter(r => r.name.includes('会議室'));
+                    if (meetingRooms.length > 0) {
+                        let response = `${meetingRooms.length}個の会議室が見つかりました:\\n\\n`;
+                        meetingRooms.forEach(room => {
+                            response += `- ${room.name} (ID: ${room.id})\\n`;
+                            const roomSensors = data.sensors.filter(s => s.equipmentId === room.id);
+                            if (roomSensors.length > 0) {
+                                response += `  センサー: ${roomSensors.map(s => s.name).join(', ')}\\n`;
+                            }
+                        });
+                        return response;
+                    }
+                }
+
+                // デフォルトレスポンス
+                return `申し訳ございません。「${query}」に関する情報が見つかりませんでした。\\n\\n以下のような質問をお試しください:\\n- 「会議室の温度センサーを教えて」\\n- 「1階のセンサー一覧」\\n- 「外調機のセンサー」`;
+            };
+
+            // ビューコンポーネント
+            const renderView = () => {
+                switch (currentView) {
+                    case 'editor':
+                        return <BuildingEditor data={buildingData} setData={setBuildingData} />;
+                    case 'mapping':
+                        return <SensorMapping
+                            generatedSensors={buildingData.sensors}
+                            physicalSensors={physicalSensors}
+                            mappings={sensorMappings}
+                            onImportCSV={importPhysicalSensorsCSV}
+                            onPerformMapping={performSensorMapping}
+                        />;
+                    case 'chat':
+                        return <ChatInterface
+                            messages={chatMessages}
+                            onSendMessage={sendChatMessage}
+                        />;
+                    case 'settings':
+                        return <Settings apiKey={apiKey} setApiKey={setApiKey} />;
+                    default:
+                        return <div>未実装</div>;
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <h1>建物モデルワークベンチ</h1>
+                        <p>Building Model Workbench - 統合建物情報管理システム</p>
+                    </div>
+
+                    <div className="main-content">
+                        <div className="sidebar">
+                            <div className="sidebar-section">
+                                <h3>ナビゲーション</h3>
+                                <button
+                                    className={`nav-button ${currentView === 'editor' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('editor')}
+                                >
+                                    📝 建物モデルエディタ
+                                </button>
+                                <button
+                                    className={`nav-button ${currentView === 'mapping' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('mapping')}
+                                >
+                                    🔗 センサーマッピング
+                                </button>
+                                <button
+                                    className={`nav-button ${currentView === 'chat' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('chat')}
+                                >
+                                    💬 自然言語クエリ
+                                </button>
+                                <button
+                                    className={`nav-button ${currentView === 'settings' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('settings')}
+                                >
+                                    ⚙️ API設定
+                                </button>
+                            </div>
+
+                            <div className="sidebar-section">
+                                <h3>データ管理</h3>
+                                <button className="nav-button" onClick={loadSampleData}>
+                                    📋 サンプルデータ読込
+                                </button>
+                                <button className="nav-button" onClick={exportJSON}>
+                                    💾 JSONエクスポート
+                                </button>
+                                <label className="nav-button" style={{cursor: 'pointer'}}>
+                                    📂 JSONインポート
+                                    <input type="file" accept=".json" onChange={importJSON} />
+                                </label>
+                            </div>
+
+                            <div className="sidebar-section" style={{marginTop: 'auto'}}>
+                                <div className="stats-grid" style={{gridTemplateColumns: '1fr'}}>
+                                    <div className="stat-card">
+                                        <h3>センサー数</h3>
+                                        <div className="value">{buildingData.sensors.length}</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <h3>マッピング数</h3>
+                                        <div className="value">{sensorMappings.length}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="workspace">
+                            {renderView()}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 建物エディタコンポーネント
+        const BuildingEditor = ({ data, setData }) => {
+            const [activeTab, setActiveTab] = useState('building');
+
+            const updateBuilding = (field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    building: { ...prev.building, [field]: value }
+                }));
+            };
+
+            const addFloor = () => {
+                setData(prev => ({
+                    ...prev,
+                    floors: [...prev.floors, { id: '', name: '', area: 0 }]
+                }));
+            };
+
+            const updateFloor = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    floors: prev.floors.map((floor, i) =>
+                        i === index ? { ...floor, [field]: value } : floor
+                    )
+                }));
+            };
+
+            const deleteFloor = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    floors: prev.floors.filter((_, i) => i !== index)
+                }));
+            };
+
+            const addSensor = () => {
+                setData(prev => ({
+                    ...prev,
+                    sensors: [...prev.sensors, { id: '', name: '', type: 'temperature', equipmentId: '', unit: '°C' }]
+                }));
+            };
+
+            const updateSensor = (index, field, value) => {
+                setData(prev => ({
+                    ...prev,
+                    sensors: prev.sensors.map((sensor, i) =>
+                        i === index ? { ...sensor, [field]: value } : sensor
+                    )
+                }));
+            };
+
+            const deleteSensor = (index) => {
+                setData(prev => ({
+                    ...prev,
+                    sensors: prev.sensors.filter((_, i) => i !== index)
+                }));
+            };
+
+            const renderTabContent = () => {
+                switch (activeTab) {
+                    case 'building':
+                        return (
+                            <div className="card">
+                                <h2>建物基本情報</h2>
+                                <div className="form-group">
+                                    <label>建物ID</label>
+                                    <input
+                                        value={data.building.id}
+                                        onChange={(e) => updateBuilding('id', e.target.value)}
+                                        placeholder="Building_A"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>建物名</label>
+                                    <input
+                                        value={data.building.name}
+                                        onChange={(e) => updateBuilding('name', e.target.value)}
+                                        placeholder="東京グリーンタワー"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>所在地</label>
+                                    <input
+                                        value={data.building.location}
+                                        onChange={(e) => updateBuilding('location', e.target.value)}
+                                        placeholder="東京都千代田区"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>延床面積（㎡）</label>
+                                    <input
+                                        type="number"
+                                        value={data.building.totalArea}
+                                        onChange={(e) => updateBuilding('totalArea', parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+                        );
+
+                    case 'floors':
+                        return (
+                            <div className="card">
+                                <h2>階</h2>
+                                <button className="btn btn-primary" onClick={addFloor}>階を追加</button>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>名称</th>
+                                                <th>面積（㎡）</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.floors.map((floor, index) => (
+                                                <tr key={index}>
+                                                    <td>
+                                                        <input
+                                                            value={floor.id}
+                                                            onChange={(e) => updateFloor(index, 'id', e.target.value)}
+                                                            placeholder="Floor_1"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={floor.name}
+                                                            onChange={(e) => updateFloor(index, 'name', e.target.value)}
+                                                            placeholder="1階"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={floor.area}
+                                                            onChange={(e) => updateFloor(index, 'area', parseFloat(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <button className="delete-btn" onClick={() => deleteFloor(index)}>削除</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        );
+
+                    case 'sensors':
+                        return (
+                            <div className="card">
+                                <h2>センサー</h2>
+                                <button className="btn btn-primary" onClick={addSensor}>センサーを追加</button>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>名称</th>
+                                                <th>種類</th>
+                                                <th>設備ID</th>
+                                                <th>単位</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.sensors.map((sensor, index) => (
+                                                <tr key={index}>
+                                                    <td>
+                                                        <input
+                                                            value={sensor.id}
+                                                            onChange={(e) => updateSensor(index, 'id', e.target.value)}
+                                                            placeholder="Sensor_1"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={sensor.name}
+                                                            onChange={(e) => updateSensor(index, 'name', e.target.value)}
+                                                            placeholder="温度センサー"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <select
+                                                            value={sensor.type}
+                                                            onChange={(e) => updateSensor(index, 'type', e.target.value)}
+                                                        >
+                                                            <option value="temperature">温度</option>
+                                                            <option value="humidity">湿度</option>
+                                                            <option value="power">電力</option>
+                                                            <option value="flow">流量</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={sensor.equipmentId}
+                                                            onChange={(e) => updateSensor(index, 'equipmentId', e.target.value)}
+                                                            placeholder="AHU_1"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            value={sensor.unit}
+                                                            onChange={(e) => updateSensor(index, 'unit', e.target.value)}
+                                                            placeholder="°C"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <button className="delete-btn" onClick={() => deleteSensor(index)}>削除</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        );
+
+                    default:
+                        return <div>タブを選択してください</div>;
+                }
+            };
+
+            return (
+                <>
+                    <div className="toolbar">
+                        <h2 style={{flex: 1, fontSize: '18px'}}>建物モデルエディタ</h2>
+                    </div>
+                    <div className="content-area">
+                        <div className="tab-container">
+                            <div className="tabs">
+                                <button
+                                    className={`tab ${activeTab === 'building' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('building')}
+                                >
+                                    建物情報
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'floors' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('floors')}
+                                >
+                                    階
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'sensors' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('sensors')}
+                                >
+                                    センサー
+                                </button>
+                            </div>
+                        </div>
+                        {renderTabContent()}
+                    </div>
+                </>
+            );
+        };
+
+        // センサーマッピングコンポーネント
+        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping }) => {
+            return (
+                <>
+                    <div className="toolbar">
+                        <h2 style={{flex: 1, fontSize: '18px'}}>センサーマッピング</h2>
+                        <label className="btn btn-secondary">
+                            具体センサーCSV読込
+                            <input type="file" accept=".csv" onChange={onImportCSV} />
+                        </label>
+                        <button className="btn btn-primary" onClick={onPerformMapping}>
+                            AIマッピング実行
+                        </button>
+                    </div>
+                    <div className="content-area">
+                        <div className="instruction-box">
+                            <h3>センサーマッピングとは？</h3>
+                            <p>
+                                建物エディタで生成した論理的なセンサー（生成センサー）と、実際に建物に設置されている物理的なセンサー（具体センサー）を
+                                AIを使って自動的にマッピングします。具体センサーのCSVファイルを読み込み、「AIマッピング実行」ボタンをクリックしてください。
+                            </p>
+                        </div>
+
+                        <div className="card">
+                            <h2>生成センサー一覧（建物エディタから）</h2>
+                            <div className="sensor-list">
+                                {generatedSensors.length === 0 ? (
+                                    <p>建物エディタでセンサーを追加してください</p>
+                                ) : (
+                                    generatedSensors.map(sensor => (
+                                        <div key={sensor.id} className="sensor-item">
+                                            <div>
+                                                <strong>{sensor.name}</strong>
+                                                <div style={{fontSize: '12px', color: '#666'}}>
+                                                    ID: {sensor.id} | タイプ: {sensor.type} | 設備: {sensor.equipmentId}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            <h2>具体センサー一覧（CSVから読込）</h2>
+                            <div className="sensor-list">
+                                {physicalSensors.length === 0 ? (
+                                    <p>CSVファイルから具体センサーを読み込んでください</p>
+                                ) : (
+                                    physicalSensors.map(sensor => (
+                                        <div key={sensor.id} className="sensor-item">
+                                            <div>
+                                                <strong>{sensor.name}</strong>
+                                                <div style={{fontSize: '12px', color: '#666'}}>
+                                                    ID: {sensor.id} | タイプ: {sensor.type} | 場所: {sensor.location}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {mappings.length > 0 && (
+                            <div className="card">
+                                <h2>マッピング結果</h2>
+                                <div className="mapping-result">
+                                    {mappings.map((mapping, index) => (
+                                        <div key={index} className="mapping-item">
+                                            <div>
+                                                <strong>{mapping.generatedSensorName}</strong>
+                                                <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                                    → {mapping.physicalSensorName}
+                                                </div>
+                                                <div style={{fontSize: '11px', color: '#888', marginTop: '2px'}}>
+                                                    {mapping.reason}
+                                                </div>
+                                            </div>
+                                            <span className={`confidence-badge ${
+                                                mapping.confidence > 0.8 ? 'confidence-high' :
+                                                mapping.confidence > 0.6 ? 'confidence-medium' : 'confidence-low'
+                                            }`}>
+                                                {(mapping.confidence * 100).toFixed(0)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            );
+        };
+
+        // チャットインターフェースコンポーネント
+        const ChatInterface = ({ messages, onSendMessage }) => {
+            const [inputMessage, setInputMessage] = useState('');
+
+            const handleSend = () => {
+                if (inputMessage.trim()) {
+                    onSendMessage(inputMessage);
+                    setInputMessage('');
+                }
+            };
+
+            return (
+                <>
+                    <div className="toolbar">
+                        <h2 style={{flex: 1, fontSize: '18px'}}>自然言語クエリ</h2>
+                    </div>
+                    <div className="content-area" style={{padding: 0, display: 'flex', flexDirection: 'column'}}>
+                        <div className="instruction-box" style={{margin: '20px', marginBottom: '10px'}}>
+                            <h3>自然言語でセンサーを検索</h3>
+                            <p>
+                                「会議室の温度センサーを教えて」「1階のセンサー一覧」などの自然な日本語で、
+                                建物データから該当するセンサーを検索できます。マッピング済みの場合は具体センサー名も表示されます。
+                            </p>
+                        </div>
+
+                        <div className="chat-container" style={{flex: 1}}>
+                            <div className="chat-messages">
+                                {messages.length === 0 ? (
+                                    <div style={{textAlign: 'center', color: '#999', padding: '40px'}}>
+                                        <p>質問を入力してください</p>
+                                        <p style={{fontSize: '12px', marginTop: '8px'}}>
+                                            例: 「会議室の温度センサーを教えて」
+                                        </p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg, index) => (
+                                        <div key={index} className={`chat-message ${msg.role}`}>
+                                            {msg.content}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="chat-input-area">
+                                <div className="chat-input">
+                                    <textarea
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSend();
+                                            }
+                                        }}
+                                        placeholder="質問を入力してください..."
+                                        rows="3"
+                                    />
+                                    <button className="btn btn-primary" onClick={handleSend}>
+                                        送信
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
+        // 設定コンポーネント
+        const Settings = ({ apiKey, setApiKey }) => {
+            return (
+                <>
+                    <div className="toolbar">
+                        <h2 style={{flex: 1, fontSize: '18px'}}>API設定</h2>
+                    </div>
+                    <div className="content-area">
+                        <div className="api-config">
+                            <h3>⚠️ API設定が必要です</h3>
+                            <p style={{fontSize: '13px', color: '#92400e', marginTop: '8px'}}>
+                                AIマッピングと自然言語クエリを使用するには、APIキーを設定してください。
+                                現在の実装はシミュレーションモードで動作しています。
+                            </p>
+                        </div>
+
+                        <div className="card">
+                            <h2>AI API設定</h2>
+                            <div className="form-group">
+                                <label>APIキー</label>
+                                <input
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="sk-..."
+                                />
+                                <p style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                    OpenAI APIまたは互換性のあるAPIキーを入力してください
+                                </p>
+                            </div>
+                            <div className="form-group">
+                                <label>APIエンドポイント（オプション）</label>
+                                <input
+                                    type="text"
+                                    placeholder="https://api.openai.com/v1"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>モデル</label>
+                                <select>
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                    <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                                </select>
+                            </div>
+                            <button className="btn btn-success">設定を保存</button>
+                        </div>
+
+                        <div className="card">
+                            <h2>データパス設定</h2>
+                            <div className="form-group">
+                                <label>オントロジーファイルパス</label>
+                                <input
+                                    type="text"
+                                    value="./building_ontology.ttl"
+                                    readOnly
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
+        // アプリケーションのレンダリング
+        ReactDOM.render(<BuildingModelWorkbench />, document.getElementById('root'));
+    </script>
+</body>
+</html>
