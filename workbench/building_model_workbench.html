@@ -626,7 +626,7 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const text = e.target.result;
-                        const lines = text.split('\\n').filter(line => line.trim());
+                        const lines = text.split(/\r?\n/).filter(line => line.trim());
                         const headers = lines[0].split(',');
                         const sensors = lines.slice(1).map(line => {
                             const values = line.split(',');
