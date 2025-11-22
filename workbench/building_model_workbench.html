@@ -537,6 +537,23 @@
             const [apiProvider, setApiProvider] = useState('openai');
             const [apiModel, setApiModel] = useState('gpt-4o-mini');
             const [apiEndpoint, setApiEndpoint] = useState('');
+            const [queryPromptTemplate, setQueryPromptTemplate] = useState(`あなたは建物のセンサー情報を検索・分析するAIアシスタントです。
+
+# 建物データ
+{buildingData}
+
+# センサーマッピング情報
+{sensorMappings}
+
+# ユーザーの質問
+{query}
+
+上記の建物データとセンサーマッピング情報を基に、ユーザーの質問に回答してください。
+回答には以下を含めてください：
+- 該当するセンサーの名前とID
+- センサーのタイプと単位
+- マッピングされている具体センサーの情報（ある場合）
+- 設置場所や関連する設備の情報`);
 
             // サンプルデータのロード
             const loadSampleData = () => {
@@ -867,6 +884,10 @@
                         return <ChatInterface
                             messages={chatMessages}
                             onSendMessage={sendChatMessage}
+                            promptTemplate={queryPromptTemplate}
+                            setPromptTemplate={setQueryPromptTemplate}
+                            buildingData={buildingData}
+                            sensorMappings={sensorMappings}
                         />;
                     case 'settings':
                         return <Settings
@@ -1974,8 +1995,10 @@
         };
 
         // チャットインターフェースコンポーネント
-        const ChatInterface = ({ messages, onSendMessage }) => {
+        const ChatInterface = ({ messages, onSendMessage, promptTemplate, setPromptTemplate, buildingData, sensorMappings }) => {
             const [inputMessage, setInputMessage] = useState('');
+            const [showPromptEditor, setShowPromptEditor] = useState(false);
+            const [showPromptPreview, setShowPromptPreview] = useState(false);
 
             const handleSend = () => {
                 if (inputMessage.trim()) {
@@ -1984,13 +2007,104 @@
                 }
             };
 
+            const handleResetTemplate = () => {
+                if (confirm('プロンプトテンプレートをデフォルトに戻しますか？')) {
+                    setPromptTemplate(`あなたは建物のセンサー情報を検索・分析するAIアシスタントです。
+
+# 建物データ
+{buildingData}
+
+# センサーマッピング情報
+{sensorMappings}
+
+# ユーザーの質問
+{query}
+
+上記の建物データとセンサーマッピング情報を基に、ユーザーの質問に回答してください。
+回答には以下を含めてください：
+- 該当するセンサーの名前とID
+- センサーのタイプと単位
+- マッピングされている具体センサーの情報（ある場合）
+- 設置場所や関連する設備の情報`);
+                    alert('デフォルトテンプレートに戻しました');
+                }
+            };
+
+            const generatePromptPreview = () => {
+                const exampleQuery = inputMessage || '会議室の温度センサーを教えて';
+                return promptTemplate
+                    .replace('{buildingData}', JSON.stringify(buildingData, null, 2))
+                    .replace('{sensorMappings}', JSON.stringify(sensorMappings, null, 2))
+                    .replace('{query}', exampleQuery);
+            };
+
             return (
                 <>
                     <div className="toolbar">
                         <h2 style={{flex: 1, fontSize: '18px'}}>自然言語クエリ</h2>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setShowPromptEditor(!showPromptEditor)}
+                            style={{marginRight: '8px'}}
+                        >
+                            {showPromptEditor ? '📝 テンプレート編集を閉じる' : '📝 プロンプトテンプレート編集'}
+                        </button>
                     </div>
                     <div className="content-area" style={{padding: 0, display: 'flex', flexDirection: 'column'}}>
-                        <div className="instruction-box" style={{margin: '20px', marginBottom: '10px'}}>
+                        {showPromptEditor && (
+                            <div className="card" style={{margin: '20px', marginBottom: '10px'}}>
+                                <h3>プロンプトテンプレート</h3>
+                                <p style={{fontSize: '13px', color: '#666', marginBottom: '12px'}}>
+                                    APIに送信されるプロンプトのテンプレートを編集できます。
+                                    <code>{'{buildingData}'}</code>、<code>{'{sensorMappings}'}</code>、<code>{'{query}'}</code> はそれぞれ実際のデータに置き換えられます。
+                                </p>
+                                <div className="form-group">
+                                    <textarea
+                                        value={promptTemplate}
+                                        onChange={(e) => setPromptTemplate(e.target.value)}
+                                        rows="15"
+                                        style={{fontFamily: 'monospace', fontSize: '13px', width: '100%'}}
+                                        placeholder="プロンプトテンプレートを入力..."
+                                    />
+                                </div>
+                                <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={handleResetTemplate}
+                                    >
+                                        デフォルトに戻す
+                                    </button>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => setShowPromptPreview(!showPromptPreview)}
+                                    >
+                                        {showPromptPreview ? 'プレビューを閉じる' : 'プレビュー表示'}
+                                    </button>
+                                </div>
+                                {showPromptPreview && (
+                                    <div style={{marginTop: '16px'}}>
+                                        <h4 style={{fontSize: '14px', marginBottom: '8px'}}>プロンプトプレビュー</h4>
+                                        <pre style={{
+                                            background: '#f5f5f5',
+                                            padding: '12px',
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            maxHeight: '300px',
+                                            overflow: 'auto',
+                                            whiteSpace: 'pre-wrap',
+                                            wordWrap: 'break-word'
+                                        }}>
+                                            {generatePromptPreview()}
+                                        </pre>
+                                        <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
+                                            ※ 入力欄に質問がある場合はそれを使用、なければサンプル質問を使用してプレビューを生成しています
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="instruction-box" style={{margin: '20px', marginBottom: '10px', marginTop: showPromptEditor ? '10px' : '20px'}}>
                             <h3>自然言語でセンサーを検索</h3>
                             <p>
                                 「会議室の温度センサーを教えて」「1階のセンサー一覧」などの自然な日本語で、
