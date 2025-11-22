@@ -534,6 +534,9 @@
             const [sensorMappings, setSensorMappings] = useState([]);
             const [chatMessages, setChatMessages] = useState([]);
             const [apiKey, setApiKey] = useState('');
+            const [apiProvider, setApiProvider] = useState('openai');
+            const [apiModel, setApiModel] = useState('gpt-4o-mini');
+            const [apiEndpoint, setApiEndpoint] = useState('');
 
             // サンプルデータのロード
             const loadSampleData = () => {
@@ -786,7 +789,16 @@
                             onSendMessage={sendChatMessage}
                         />;
                     case 'settings':
-                        return <Settings apiKey={apiKey} setApiKey={setApiKey} />;
+                        return <Settings
+                            apiKey={apiKey}
+                            setApiKey={setApiKey}
+                            apiProvider={apiProvider}
+                            setApiProvider={setApiProvider}
+                            apiModel={apiModel}
+                            setApiModel={setApiModel}
+                            apiEndpoint={apiEndpoint}
+                            setApiEndpoint={setApiEndpoint}
+                        />;
                     default:
                         return <div>未実装</div>;
                 }
@@ -1949,51 +1961,178 @@
         };
 
         // 設定コンポーネント
-        const Settings = ({ apiKey, setApiKey }) => {
+        const Settings = ({ apiKey, setApiKey, apiProvider, setApiProvider, apiModel, setApiModel, apiEndpoint, setApiEndpoint }) => {
+            const [savedConfig, setSavedConfig] = useState(false);
+
+            const handleSaveConfig = () => {
+                // LocalStorageに保存（オプション）
+                try {
+                    localStorage.setItem('apiConfig', JSON.stringify({
+                        provider: apiProvider,
+                        model: apiModel,
+                        endpoint: apiEndpoint
+                    }));
+                    setSavedConfig(true);
+                    alert('API設定を保存しました');
+                    setTimeout(() => setSavedConfig(false), 3000);
+                } catch (e) {
+                    console.error('設定の保存に失敗しました', e);
+                }
+            };
+
+            const getModelOptions = () => {
+                switch (apiProvider) {
+                    case 'openai':
+                        return [
+                            { value: 'gpt-4o', label: 'GPT-4o' },
+                            { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+                            { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+                            { value: 'gpt-4', label: 'GPT-4' },
+                            { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }
+                        ];
+                    case 'anthropic':
+                        return [
+                            { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+                            { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+                            { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+                            { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
+                        ];
+                    case 'google':
+                        return [
+                            { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (Experimental)' },
+                            { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+                            { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+                            { value: 'gemini-pro', label: 'Gemini Pro' }
+                        ];
+                    default:
+                        return [];
+                }
+            };
+
+            const getDefaultEndpoint = () => {
+                switch (apiProvider) {
+                    case 'openai':
+                        return 'https://api.openai.com/v1';
+                    case 'anthropic':
+                        return 'https://api.anthropic.com/v1';
+                    case 'google':
+                        return 'https://generativelanguage.googleapis.com/v1';
+                    default:
+                        return '';
+                }
+            };
+
+            const isConfigured = apiKey && apiKey.length > 0;
+
             return (
                 <>
                     <div className="toolbar">
                         <h2 style={{flex: 1, fontSize: '18px'}}>API設定</h2>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            <span className={`status-indicator ${isConfigured ? 'status-connected' : 'status-disconnected'}`}></span>
+                            <span style={{fontSize: '14px', color: isConfigured ? '#48bb78' : '#f56565'}}>
+                                {isConfigured ? 'API設定済み' : 'API未設定'}
+                            </span>
+                        </div>
                     </div>
                     <div className="content-area">
-                        <div className="api-config">
-                            <h3>⚠️ API設定が必要です</h3>
-                            <p style={{fontSize: '13px', color: '#92400e', marginTop: '8px'}}>
-                                AIマッピングと自然言語クエリを使用するには、APIキーを設定してください。
-                                現在の実装はシミュレーションモードで動作しています。
-                            </p>
-                        </div>
+                        {!isConfigured && (
+                            <div className="api-config">
+                                <h3>⚠️ API設定が必要です</h3>
+                                <p style={{fontSize: '13px', color: '#92400e', marginTop: '8px'}}>
+                                    AIマッピングと自然言語クエリを使用するには、APIキーを設定してください。
+                                    現在の実装はシミュレーションモードで動作しています。
+                                </p>
+                            </div>
+                        )}
 
                         <div className="card">
                             <h2>AI API設定</h2>
+
+                            <div className="form-group">
+                                <label>AIプロバイダー</label>
+                                <select
+                                    value={apiProvider}
+                                    onChange={(e) => {
+                                        setApiProvider(e.target.value);
+                                        // プロバイダー変更時にデフォルトモデルを設定
+                                        const provider = e.target.value;
+                                        if (provider === 'openai') setApiModel('gpt-4o-mini');
+                                        else if (provider === 'anthropic') setApiModel('claude-3-5-sonnet-20241022');
+                                        else if (provider === 'google') setApiModel('gemini-1.5-flash');
+                                        setApiEndpoint('');
+                                    }}
+                                >
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="google">Google (Gemini)</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>モデル</label>
+                                <select
+                                    value={apiModel}
+                                    onChange={(e) => setApiModel(e.target.value)}
+                                >
+                                    {getModelOptions().map(option => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="form-group">
                                 <label>APIキー</label>
                                 <input
                                     type="password"
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="sk-..."
+                                    placeholder={
+                                        apiProvider === 'openai' ? 'sk-...' :
+                                        apiProvider === 'anthropic' ? 'sk-ant-...' :
+                                        'API キーを入力'
+                                    }
                                 />
                                 <p style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
-                                    OpenAI APIまたは互換性のあるAPIキーを入力してください
+                                    {apiProvider === 'openai' && 'OpenAI APIキーを入力してください（https://platform.openai.com/api-keys）'}
+                                    {apiProvider === 'anthropic' && 'Anthropic APIキーを入力してください（https://console.anthropic.com/）'}
+                                    {apiProvider === 'google' && 'Google AI Studio APIキーを入力してください（https://aistudio.google.com/app/apikey）'}
                                 </p>
                             </div>
+
                             <div className="form-group">
                                 <label>APIエンドポイント（オプション）</label>
                                 <input
                                     type="text"
-                                    placeholder="https://api.openai.com/v1"
+                                    value={apiEndpoint}
+                                    onChange={(e) => setApiEndpoint(e.target.value)}
+                                    placeholder={getDefaultEndpoint()}
                                 />
+                                <p style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                    カスタムエンドポイントを使用する場合のみ入力してください。空欄の場合はデフォルトが使用されます。
+                                </p>
                             </div>
-                            <div className="form-group">
-                                <label>モデル</label>
-                                <select>
-                                    <option value="gpt-4">GPT-4</option>
-                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                    <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                                </select>
+
+                            <button
+                                className={`btn ${savedConfig ? 'btn-secondary' : 'btn-success'}`}
+                                onClick={handleSaveConfig}
+                            >
+                                {savedConfig ? '✓ 保存済み' : '設定を保存'}
+                            </button>
+                        </div>
+
+                        <div className="card">
+                            <h2>現在の設定</h2>
+                            <div style={{fontSize: '14px', lineHeight: '1.8'}}>
+                                <div><strong>プロバイダー:</strong> {
+                                    apiProvider === 'openai' ? 'OpenAI' :
+                                    apiProvider === 'anthropic' ? 'Anthropic (Claude)' :
+                                    apiProvider === 'google' ? 'Google (Gemini)' : '-'
+                                }</div>
+                                <div><strong>モデル:</strong> {apiModel || '-'}</div>
+                                <div><strong>APIキー:</strong> {apiKey ? '設定済み (●●●●●●)' : '未設定'}</div>
+                                <div><strong>エンドポイント:</strong> {apiEndpoint || getDefaultEndpoint()}</div>
                             </div>
-                            <button className="btn btn-success">設定を保存</button>
                         </div>
 
                         <div className="card">
