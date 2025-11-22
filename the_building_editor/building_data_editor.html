@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハイブリッド空調システム - 建物データエディタ</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .tree-panel {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tree-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tree-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .tree-item.selected {
+            background: #e6f2ff;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tree-item-icon {
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .tree-children {
+            margin-left: 20px;
+        }
+        
+        .edit-panel {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        
+        .form-section {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .form-section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .sensor-list {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            background: #f9f9f9;
+        }
+        
+        .sensor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .sensor-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .badge-floor { background: #e6f7ff; color: #1890ff; }
+        .badge-large-zone { background: #fff7e6; color: #fa8c16; }
+        .badge-small-zone { background: #f6ffed; color: #52c41a; }
+        .badge-room { background: #fff0f6; color: #eb2f96; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .stat-card p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .input-file {
+            display: none;
+        }
+        
+        .collapse-toggle {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .tree-panel {
+                width: 100%;
+                max-height: 300px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 初期データテンプレート
+        const createEmptyBuilding = () => ({
+            id: 'building_1',
+            name: '新規ビル',
+            description: '',
+            floors: []
+        });
+
+        const createEmptyFloor = (floorNumber) => ({
+            id: `floor_${floorNumber}`,
+            name: `${floorNumber}階`,
+            description: '',
+            largeZones: []
+        });
+
+        const createEmptyLargeZone = (name) => ({
+            id: `large_zone_${Date.now()}`,
+            name: name,
+            description: '',
+            smallZones: [],
+            ahus: [],
+            vavs: []
+        });
+
+        const createEmptySmallZone = (name) => ({
+            id: `small_zone_${Date.now()}`,
+            name: name,
+            description: '',
+            rooms: [],
+            vrfs: []
+        });
+
+        const createEmptyRoom = (name) => ({
+            id: `room_${Date.now()}`,
+            name: name,
+            description: '',
+            sensors: []
+        });
+
+        const createEmptyChiller = () => ({
+            id: `chiller_${Date.now()}`,
+            name: 'チラー',
+            description: '',
+            supplyWaterTemp: 7.0,
+            returnWaterTemp: 12.0,
+            power: 45.0
+        });
+
+        const createEmptyAHU = () => ({
+            id: `ahu_${Date.now()}`,
+            name: '外調機',
+            description: '',
+            supplyAirTemp: 16.0,
+            returnAirTemp: 24.0,
+            returnAirHumidity: 50.0,
+            outsideAirTemp: 25.0,
+            airFlow: 8000.0
+        });
+
+        const createEmptyVAV = () => ({
+            id: `vav_${Date.now()}`,
+            name: 'VAV',
+            description: '',
+            damperPosition: 70.0,
+            dischargeAirFlow: 3000.0
+        });
+
+        const createEmptyVRF = () => ({
+            id: `vrf_${Date.now()}`,
+            name: 'VRF室外機',
+            description: '',
+            outdoorTemp: 28.0,
+            power: 10.0
+        });
+
+        const createEmptySensor = (type) => ({
+            id: `sensor_${Date.now()}`,
+            type: type,
+            name: `${type}センサー`,
+            value: 0,
+            unit: type.includes('温度') ? '°C' : type.includes('湿度') ? '%' : type.includes('電力') ? 'kW' : ''
+        });
+
+        function App() {
+            const [building, setBuilding] = useState(createEmptyBuilding());
+            const [chillers, setChillers] = useState([]);
+            const [selectedItem, setSelectedItem] = useState({ type: 'building', data: null });
+            const [expandedItems, setExpandedItems] = useState({});
+
+            // 統計情報の計算
+            const stats = {
+                floors: building.floors.length,
+                largeZones: building.floors.reduce((sum, f) => sum + f.largeZones.length, 0),
+                smallZones: building.floors.reduce((sum, f) => 
+                    sum + f.largeZones.reduce((s, lz) => s + lz.smallZones.length, 0), 0),
+                rooms: building.floors.reduce((sum, f) => 
+                    sum + f.largeZones.reduce((s, lz) => 
+                        s + lz.smallZones.reduce((s2, sz) => s2 + sz.rooms.length, 0), 0), 0),
+                chillers: chillers.length,
+                ahus: building.floors.reduce((sum, f) => 
+                    sum + f.largeZones.reduce((s, lz) => s + lz.ahus.length, 0), 0),
+                vavs: building.floors.reduce((sum, f) => 
+                    sum + f.largeZones.reduce((s, lz) => s + lz.vavs.length, 0), 0),
+                vrfs: building.floors.reduce((sum, f) => 
+                    sum + f.largeZones.reduce((s, lz) => 
+                        s + lz.smallZones.reduce((s2, sz) => s2 + sz.vrfs.length, 0), 0), 0)
+            };
+
+            // JSON保存
+            const handleSaveJSON = () => {
+                const data = { building, chillers };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${building.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            // JSON読み込み
+            const handleLoadJSON = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.building) setBuilding(data.building);
+                            if (data.chillers) setChillers(data.chillers);
+                            alert('データを読み込みました');
+                        } catch (error) {
+                            alert('JSONファイルの読み込みに失敗しました');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+                event.target.value = '';
+            };
+
+            // 建物情報の更新
+            const updateBuilding = (updates) => {
+                setBuilding({ ...building, ...updates });
+            };
+
+            // フロア追加
+            const addFloor = () => {
+                const newFloor = createEmptyFloor(building.floors.length + 1);
+                setBuilding({ ...building, floors: [...building.floors, newFloor] });
+            };
+
+            // 大ゾーン追加
+            const addLargeZone = (floorId) => {
+                const updatedFloors = building.floors.map(floor => {
+                    if (floor.id === floorId) {
+                        const newZone = createEmptyLargeZone(`大ゾーン${floor.largeZones.length + 1}`);
+                        return { ...floor, largeZones: [...floor.largeZones, newZone] };
+                    }
+                    return floor;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            // 小ゾーン追加
+            const addSmallZone = (floorId, largeZoneId) => {
+                const updatedFloors = building.floors.map(floor => {
+                    if (floor.id === floorId) {
+                        const updatedLargeZones = floor.largeZones.map(lz => {
+                            if (lz.id === largeZoneId) {
+                                const newZone = createEmptySmallZone(`小ゾーン${lz.smallZones.length + 1}`);
+                                return { ...lz, smallZones: [...lz.smallZones, newZone] };
+                            }
+                            return lz;
+                        });
+                        return { ...floor, largeZones: updatedLargeZones };
+                    }
+                    return floor;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            // 部屋追加
+            const addRoom = (floorId, largeZoneId, smallZoneId) => {
+                const updatedFloors = building.floors.map(floor => {
+                    if (floor.id === floorId) {
+                        const updatedLargeZones = floor.largeZones.map(lz => {
+                            if (lz.id === largeZoneId) {
+                                const updatedSmallZones = lz.smallZones.map(sz => {
+                                    if (sz.id === smallZoneId) {
+                                        const newRoom = createEmptyRoom(`部屋${sz.rooms.length + 1}`);
+                                        return { ...sz, rooms: [...sz.rooms, newRoom] };
+                                    }
+                                    return sz;
+                                });
+                                return { ...lz, smallZones: updatedSmallZones };
+                            }
+                            return lz;
+                        });
+                        return { ...floor, largeZones: updatedLargeZones };
+                    }
+                    return floor;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            // チラー追加
+            const addChiller = () => {
+                setChillers([...chillers, createEmptyChiller()]);
+            };
+
+            // 項目削除（汎用）
+            const deleteItem = () => {
+                if (!selectedItem.data || selectedItem.type === 'building') return;
+                if (!window.confirm('本当に削除しますか？')) return;
+
+                // 実装を簡略化するため、状態を再構築
+                alert('削除機能は実装中です');
+            };
+
+            // ツリーアイテムの展開/折りたたみ
+            const toggleExpand = (id) => {
+                setExpandedItems({ ...expandedItems, [id]: !expandedItems[id] });
+            };
+
+            // ツリービューのレンダリング
+            const TreeView = () => (
+                <div className="tree-panel">
+                    <div 
+                        className={`tree-item ${selectedItem.type === 'building' ? 'selected' : ''}`}
+                        onClick={() => setSelectedItem({ type: 'building', data: building })}
+                    >
+                        <span className="tree-item-icon">🏢</span>
+                        <span>{building.name}</span>
+                    </div>
+
+                    <div className="tree-children">
+                        {/* チラー */}
+                        <div style={{ marginTop: '12px', marginBottom: '8px', fontWeight: 600, fontSize: '13px', color: '#666' }}>
+                            全館空調機器
+                        </div>
+                        {chillers.map(chiller => (
+                            <div 
+                                key={chiller.id}
+                                className={`tree-item ${selectedItem.data?.id === chiller.id ? 'selected' : ''}`}
+                                onClick={() => setSelectedItem({ type: 'chiller', data: chiller })}
+                            >
+                                <span className="tree-item-icon">❄️</span>
+                                <span>{chiller.name}</span>
+                            </div>
+                        ))}
+
+                        {/* フロア */}
+                        <div style={{ marginTop: '12px', marginBottom: '8px', fontWeight: 600, fontSize: '13px', color: '#666' }}>
+                            建物構造
+                        </div>
+                        {building.floors.map(floor => (
+                            <div key={floor.id}>
+                                <div 
+                                    className={`tree-item ${selectedItem.data?.id === floor.id ? 'selected' : ''}`}
+                                    onClick={() => setSelectedItem({ type: 'floor', data: floor })}
+                                >
+                                    <span className="collapse-toggle" onClick={(e) => { e.stopPropagation(); toggleExpand(floor.id); }}>
+                                        {expandedItems[floor.id] ? '▼' : '▶'}
+                                    </span>
+                                    <span className="tree-item-icon">🏛️</span>
+                                    <span>{floor.name}</span>
+                                    <span className="badge badge-floor">{floor.largeZones.length}</span>
+                                </div>
+                                
+                                {expandedItems[floor.id] && (
+                                    <div className="tree-children">
+                                        {floor.largeZones.map(largeZone => (
+                                            <div key={largeZone.id}>
+                                                <div 
+                                                    className={`tree-item ${selectedItem.data?.id === largeZone.id ? 'selected' : ''}`}
+                                                    onClick={() => setSelectedItem({ type: 'largeZone', data: largeZone, floorId: floor.id })}
+                                                >
+                                                    <span className="collapse-toggle" onClick={(e) => { e.stopPropagation(); toggleExpand(largeZone.id); }}>
+                                                        {expandedItems[largeZone.id] ? '▼' : '▶'}
+                                                    </span>
+                                                    <span className="tree-item-icon">🟦</span>
+                                                    <span>{largeZone.name}</span>
+                                                    <span className="badge badge-large-zone">{largeZone.smallZones.length}</span>
+                                                </div>
+                                                
+                                                {expandedItems[largeZone.id] && (
+                                                    <div className="tree-children">
+                                                        {largeZone.smallZones.map(smallZone => (
+                                                            <div key={smallZone.id}>
+                                                                <div 
+                                                                    className={`tree-item ${selectedItem.data?.id === smallZone.id ? 'selected' : ''}`}
+                                                                    onClick={() => setSelectedItem({ type: 'smallZone', data: smallZone, floorId: floor.id, largeZoneId: largeZone.id })}
+                                                                >
+                                                                    <span className="collapse-toggle" onClick={(e) => { e.stopPropagation(); toggleExpand(smallZone.id); }}>
+                                                                        {expandedItems[smallZone.id] ? '▼' : '▶'}
+                                                                    </span>
+                                                                    <span className="tree-item-icon">🟩</span>
+                                                                    <span>{smallZone.name}</span>
+                                                                    <span className="badge badge-small-zone">{smallZone.rooms.length}</span>
+                                                                </div>
+                                                                
+                                                                {expandedItems[smallZone.id] && (
+                                                                    <div className="tree-children">
+                                                                        {smallZone.rooms.map(room => (
+                                                                            <div 
+                                                                                key={room.id}
+                                                                                className={`tree-item ${selectedItem.data?.id === room.id ? 'selected' : ''}`}
+                                                                                onClick={() => setSelectedItem({ type: 'room', data: room, floorId: floor.id, largeZoneId: largeZone.id, smallZoneId: smallZone.id })}
+                                                                            >
+                                                                                <span className="tree-item-icon">🚪</span>
+                                                                                <span>{room.name}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            // 編集パネルのレンダリング
+            const EditPanel = () => {
+                if (!selectedItem.data && selectedItem.type !== 'building') {
+                    return (
+                        <div className="edit-panel">
+                            <div className="empty-state">
+                                <div className="empty-state-icon">📋</div>
+                                <h3>項目を選択してください</h3>
+                                <p>左のツリーから編集したい項目を選択してください</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                switch (selectedItem.type) {
+                    case 'building':
+                        return <BuildingEditForm building={building} updateBuilding={updateBuilding} stats={stats} />;
+                    case 'floor':
+                        return <FloorEditForm floor={selectedItem.data} addLargeZone={addLargeZone} building={building} setBuilding={setBuilding} />;
+                    case 'largeZone':
+                        return <LargeZoneEditForm largeZone={selectedItem.data} floorId={selectedItem.floorId} addSmallZone={addSmallZone} building={building} setBuilding={setBuilding} />;
+                    case 'smallZone':
+                        return <SmallZoneEditForm smallZone={selectedItem.data} floorId={selectedItem.floorId} largeZoneId={selectedItem.largeZoneId} addRoom={addRoom} building={building} setBuilding={setBuilding} />;
+                    case 'room':
+                        return <RoomEditForm room={selectedItem.data} floorId={selectedItem.floorId} largeZoneId={selectedItem.largeZoneId} smallZoneId={selectedItem.smallZoneId} building={building} setBuilding={setBuilding} />;
+                    case 'chiller':
+                        return <ChillerEditForm chiller={selectedItem.data} chillers={chillers} setChillers={setChillers} />;
+                    default:
+                        return null;
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <h1>🏢 ハイブリッド空調システム - 建物データエディタ</h1>
+                        <p>建物の階層構造、空調機器、センサー情報を入力・編集できます</p>
+                    </div>
+
+                    <div className="toolbar">
+                        <button className="btn btn-success" onClick={handleSaveJSON}>
+                            💾 JSON保存
+                        </button>
+                        <label className="btn btn-secondary">
+                            📂 JSON読込
+                            <input type="file" className="input-file" accept=".json" onChange={handleLoadJSON} />
+                        </label>
+                        <button className="btn btn-secondary" onClick={() => loadSampleData(setBuilding, setChillers)}>
+                            📖 サンプルデータ
+                        </button>
+                        <button className="btn btn-primary" onClick={addFloor}>
+                            ➕ フロア追加
+                        </button>
+                        <button className="btn btn-primary" onClick={addChiller}>
+                            ❄️ チラー追加
+                        </button>
+                    </div>
+
+                    <div className="main-content">
+                        <TreeView />
+                        <EditPanel />
+                    </div>
+                </div>
+            );
+        }
+
+        // サンプルデータのロード
+        const loadSampleData = (setBuilding, setChillers) => {
+            const sampleBuilding = {
+                id: 'building_1',
+                name: '東京グリーンタワー（サンプル）',
+                description: '2階建てオフィスビル、ハイブリッド空調システム',
+                floors: [
+                    {
+                        id: 'floor_1',
+                        name: '1階',
+                        description: '延床面積1,200㎡',
+                        largeZones: [
+                            {
+                                id: 'large_zone_1a',
+                                name: '大ゾーン1A（東側エリア）',
+                                description: '全館空調担当',
+                                smallZones: [
+                                    {
+                                        id: 'small_zone_1a1',
+                                        name: '小ゾーン1A1（会議室エリア）',
+                                        description: 'VRF担当',
+                                        rooms: [
+                                            { id: 'room_101', name: '会議室101', description: '20名収容', sensors: [] },
+                                            { id: 'room_102', name: '会議室102', description: '10名収容', sensors: [] }
+                                        ],
+                                        vrfs: []
+                                    },
+                                    {
+                                        id: 'small_zone_1a2',
+                                        name: '小ゾーン1A2（オフィスエリア）',
+                                        description: 'VRF担当',
+                                        rooms: [
+                                            { id: 'room_103', name: 'オフィス103', description: '執務スペース', sensors: [] },
+                                            { id: 'room_104', name: 'オフィス104', description: '執務スペース', sensors: [] }
+                                        ],
+                                        vrfs: []
+                                    }
+                                ],
+                                ahus: [],
+                                vavs: []
+                            },
+                            {
+                                id: 'large_zone_1b',
+                                name: '大ゾーン1B（西側エリア）',
+                                description: '全館空調担当',
+                                smallZones: [
+                                    {
+                                        id: 'small_zone_1b1',
+                                        name: '小ゾーン1B1（執務室）',
+                                        description: 'VRF担当',
+                                        rooms: [
+                                            { id: 'room_106', name: '執務室106', description: '30名収容', sensors: [] }
+                                        ],
+                                        vrfs: []
+                                    }
+                                ],
+                                ahus: [],
+                                vavs: []
+                            }
+                        ]
+                    },
+                    {
+                        id: 'floor_2',
+                        name: '2階',
+                        description: '延床面積1,200㎡',
+                        largeZones: [
+                            {
+                                id: 'large_zone_2a',
+                                name: '大ゾーン2A（全フロア）',
+                                description: '全館空調担当',
+                                smallZones: [
+                                    {
+                                        id: 'small_zone_2a1',
+                                        name: '小ゾーン2A1（役員室エリア）',
+                                        description: 'VRF担当',
+                                        rooms: [
+                                            { id: 'room_201', name: '役員室201', description: '役員個室', sensors: [] }
+                                        ],
+                                        vrfs: []
+                                    },
+                                    {
+                                        id: 'small_zone_2a2',
+                                        name: '小ゾーン2A2（オープンオフィス）',
+                                        description: 'VRF担当',
+                                        rooms: [
+                                            { id: 'room_202', name: 'オープンオフィス202', description: '50名収容', sensors: [] }
+                                        ],
+                                        vrfs: []
+                                    }
+                                ],
+                                ahus: [],
+                                vavs: []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            const sampleChillers = [
+                {
+                    id: 'chiller_1',
+                    name: 'チラー1号機',
+                    description: '全館空調用冷水生成',
+                    supplyWaterTemp: 7.0,
+                    returnWaterTemp: 12.5,
+                    power: 45.2
+                }
+            ];
+
+            setBuilding(sampleBuilding);
+            setChillers(sampleChillers);
+            alert('サンプルデータを読み込みました');
+        };
+
+        // 建物編集フォーム
+        function BuildingEditForm({ building, updateBuilding, stats }) {
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>🏢 建物情報</h2>
+                        <div className="form-group">
+                            <label>建物名</label>
+                            <input 
+                                type="text" 
+                                value={building.name}
+                                onChange={(e) => updateBuilding({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={building.description}
+                                onChange={(e) => updateBuilding({ description: e.target.value })}
+                                placeholder="建物の概要や特徴を入力"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h2>📊 統計情報</h2>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <h3>{stats.floors}</h3>
+                                <p>フロア数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.largeZones}</h3>
+                                <p>大ゾーン数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.smallZones}</h3>
+                                <p>小ゾーン数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.rooms}</h3>
+                                <p>部屋数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.chillers}</h3>
+                                <p>チラー数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.ahus}</h3>
+                                <p>外調機数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.vavs}</h3>
+                                <p>VAV数</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>{stats.vrfs}</h3>
+                                <p>VRF数</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // フロア編集フォーム
+        function FloorEditForm({ floor, addLargeZone, building, setBuilding }) {
+            const updateFloor = (updates) => {
+                const updatedFloors = building.floors.map(f => 
+                    f.id === floor.id ? { ...f, ...updates } : f
+                );
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>🏛️ フロア情報</h2>
+                        <div className="form-group">
+                            <label>フロア名</label>
+                            <input 
+                                type="text" 
+                                value={floor.name}
+                                onChange={(e) => updateFloor({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={floor.description}
+                                onChange={(e) => updateFloor({ description: e.target.value })}
+                                placeholder="フロアの説明を入力" 
+                            />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => addLargeZone(floor.id)}>
+                            ➕ 大ゾーン追加
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // 大ゾーン編集フォーム
+        function LargeZoneEditForm({ largeZone, floorId, addSmallZone, building, setBuilding }) {
+            const updateLargeZone = (updates) => {
+                const updatedFloors = building.floors.map(f => {
+                    if (f.id === floorId) {
+                        const updatedLargeZones = f.largeZones.map(lz =>
+                            lz.id === largeZone.id ? { ...lz, ...updates } : lz
+                        );
+                        return { ...f, largeZones: updatedLargeZones };
+                    }
+                    return f;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>🟦 大ゾーン情報</h2>
+                        <div className="form-group">
+                            <label>ゾーン名</label>
+                            <input 
+                                type="text" 
+                                value={largeZone.name}
+                                onChange={(e) => updateLargeZone({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={largeZone.description}
+                                onChange={(e) => updateLargeZone({ description: e.target.value })}
+                                placeholder="大ゾーンの説明を入力" 
+                            />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => addSmallZone(floorId, largeZone.id)}>
+                            ➕ 小ゾーン追加
+                        </button>
+                    </div>
+                    <div className="form-section">
+                        <h2>🌀 外調機 (AHU)</h2>
+                        <p style={{ color: '#666', marginBottom: '12px' }}>
+                            全館空調システムの外気処理ユニット（{largeZone.ahus?.length || 0}台）
+                        </p>
+                        <button className="btn btn-secondary">➕ 外調機追加</button>
+                    </div>
+                    <div className="form-section">
+                        <h2>💨 VAV</h2>
+                        <p style={{ color: '#666', marginBottom: '12px' }}>
+                            変風量ユニット（{largeZone.vavs?.length || 0}台）
+                        </p>
+                        <button className="btn btn-secondary">➕ VAV追加</button>
+                    </div>
+                </div>
+            );
+        }
+
+        // 小ゾーン編集フォーム
+        function SmallZoneEditForm({ smallZone, floorId, largeZoneId, addRoom, building, setBuilding }) {
+            const updateSmallZone = (updates) => {
+                const updatedFloors = building.floors.map(f => {
+                    if (f.id === floorId) {
+                        const updatedLargeZones = f.largeZones.map(lz => {
+                            if (lz.id === largeZoneId) {
+                                const updatedSmallZones = lz.smallZones.map(sz =>
+                                    sz.id === smallZone.id ? { ...sz, ...updates } : sz
+                                );
+                                return { ...lz, smallZones: updatedSmallZones };
+                            }
+                            return lz;
+                        });
+                        return { ...f, largeZones: updatedLargeZones };
+                    }
+                    return f;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>🟩 小ゾーン情報</h2>
+                        <div className="form-group">
+                            <label>ゾーン名</label>
+                            <input 
+                                type="text" 
+                                value={smallZone.name}
+                                onChange={(e) => updateSmallZone({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={smallZone.description}
+                                onChange={(e) => updateSmallZone({ description: e.target.value })}
+                                placeholder="小ゾーンの説明を入力" 
+                            />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => addRoom(floorId, largeZoneId, smallZone.id)}>
+                            ➕ 部屋追加
+                        </button>
+                    </div>
+                    <div className="form-section">
+                        <h2>🔧 VRF室外機</h2>
+                        <p style={{ color: '#666', marginBottom: '12px' }}>
+                            個別空調システムの室外機（{smallZone.vrfs?.length || 0}台）
+                        </p>
+                        <button className="btn btn-secondary">➕ VRF追加</button>
+                    </div>
+                </div>
+            );
+        }
+
+        // 部屋編集フォーム
+        function RoomEditForm({ room, floorId, largeZoneId, smallZoneId, building, setBuilding }) {
+            const updateRoom = (updates) => {
+                const updatedFloors = building.floors.map(f => {
+                    if (f.id === floorId) {
+                        const updatedLargeZones = f.largeZones.map(lz => {
+                            if (lz.id === largeZoneId) {
+                                const updatedSmallZones = lz.smallZones.map(sz => {
+                                    if (sz.id === smallZoneId) {
+                                        const updatedRooms = sz.rooms.map(r =>
+                                            r.id === room.id ? { ...r, ...updates } : r
+                                        );
+                                        return { ...sz, rooms: updatedRooms };
+                                    }
+                                    return sz;
+                                });
+                                return { ...lz, smallZones: updatedSmallZones };
+                            }
+                            return lz;
+                        });
+                        return { ...f, largeZones: updatedLargeZones };
+                    }
+                    return f;
+                });
+                setBuilding({ ...building, floors: updatedFloors });
+            };
+
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>🚪 部屋情報</h2>
+                        <div className="form-group">
+                            <label>部屋名</label>
+                            <input 
+                                type="text" 
+                                value={room.name}
+                                onChange={(e) => updateRoom({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={room.description}
+                                onChange={(e) => updateRoom({ description: e.target.value })}
+                                placeholder="部屋の用途や特徴を入力" 
+                            />
+                        </div>
+                    </div>
+                    <div className="form-section">
+                        <h2>🌡️ センサー</h2>
+                        <div className="sensor-list">
+                            {room.sensors && room.sensors.length > 0 ? (
+                                room.sensors.map(sensor => (
+                                    <div key={sensor.id} className="sensor-item">
+                                        <span>{sensor.name}</span>
+                                        <span>{sensor.value} {sensor.unit}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p style={{ color: '#999', textAlign: 'center' }}>センサーがありません</p>
+                            )}
+                        </div>
+                        <button className="btn btn-secondary" style={{ marginTop: '12px' }}>
+                            ➕ センサー追加
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // チラー編集フォーム
+        function ChillerEditForm({ chiller, chillers, setChillers }) {
+            const updateChiller = (updates) => {
+                const updatedChillers = chillers.map(c =>
+                    c.id === chiller.id ? { ...c, ...updates } : c
+                );
+                setChillers(updatedChillers);
+            };
+
+            return (
+                <div className="edit-panel">
+                    <div className="form-section">
+                        <h2>❄️ チラー情報</h2>
+                        <div className="form-group">
+                            <label>機器名</label>
+                            <input 
+                                type="text" 
+                                value={chiller.name}
+                                onChange={(e) => updateChiller({ name: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>説明</label>
+                            <textarea 
+                                value={chiller.description}
+                                onChange={(e) => updateChiller({ description: e.target.value })}
+                                placeholder="チラーの仕様や特徴を入力" 
+                            />
+                        </div>
+                    </div>
+                    <div className="form-section">
+                        <h2>📊 運転データ</h2>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>供給水温 (°C)</label>
+                                <input 
+                                    type="number" 
+                                    value={chiller.supplyWaterTemp}
+                                    onChange={(e) => updateChiller({ supplyWaterTemp: parseFloat(e.target.value) })}
+                                    step="0.1" 
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>還水温 (°C)</label>
+                                <input 
+                                    type="number" 
+                                    value={chiller.returnWaterTemp}
+                                    onChange={(e) => updateChiller({ returnWaterTemp: parseFloat(e.target.value) })}
+                                    step="0.1" 
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>消費電力 (kW)</label>
+                            <input 
+                                type="number" 
+                                value={chiller.power}
+                                onChange={(e) => updateChiller({ power: parseFloat(e.target.value) })}
+                                step="0.1" 
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // アプリケーションのレンダリング
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

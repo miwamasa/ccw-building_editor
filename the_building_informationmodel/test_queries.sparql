@@ -1,0 +1,337 @@
+# ==========================================
+# ハイブリッド空調システム 検証用SPARQLクエリ集
+# ==========================================
+#
+# このファイルには、情報モデルの正しさを検証するための
+# テストケースとしてのSPARQLクエリが含まれています。
+#
+# ==========================================
+
+PREFIX brick: <https://brickschema.org/schema/Brick#>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX ex: <https://example.com/building#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# ==========================================
+# テストケース1: 建物構造の検証
+# ==========================================
+
+# TEST 1-1: 建物に含まれるフロア数を確認（期待値: 2フロア）
+SELECT (COUNT(?floor) as ?floor_count)
+WHERE {
+    ex:Building_A brick:hasPart ?floor .
+    ?floor a brick:Floor .
+}
+
+# TEST 1-2: 各フロアに含まれる大ゾーン数を確認
+SELECT ?floor (COUNT(?large_zone) as ?large_zone_count)
+WHERE {
+    ex:Building_A brick:hasPart ?floor .
+    ?floor brick:hasPart ?large_zone .
+    ?large_zone a brick:HVAC_Zone .
+    FILTER NOT EXISTS { ?large_zone brick:isPartOf ?parent_zone . ?parent_zone a brick:HVAC_Zone }
+}
+GROUP BY ?floor
+
+# TEST 1-3: 大ゾーンに含まれる小ゾーン数を確認
+SELECT ?large_zone (COUNT(?small_zone) as ?small_zone_count)
+WHERE {
+    ?large_zone a brick:HVAC_Zone .
+    ?large_zone brick:hasPart ?small_zone .
+    ?small_zone a brick:HVAC_Zone .
+    FILTER NOT EXISTS { ?large_zone brick:isPartOf ?parent . ?parent a brick:HVAC_Zone }
+}
+GROUP BY ?large_zone
+
+# TEST 1-4: 全ての部屋が小ゾーンに所属しているか確認
+SELECT ?room ?small_zone
+WHERE {
+    ?room a brick:Room .
+    OPTIONAL { ?room brick:isPartOf ?small_zone . ?small_zone a brick:HVAC_Zone . }
+    FILTER (!BOUND(?small_zone))
+}
+# 期待値: 結果なし（全ての部屋が小ゾーンに所属）
+
+# ==========================================
+# テストケース2: 空調システムの接続関係検証
+# ==========================================
+
+# TEST 2-1: チラーからAHUへの接続を確認（期待値: 2台のAHU）
+SELECT ?ahu
+WHERE {
+    ex:Chiller_1 brick:feeds ?ahu .
+    ?ahu a brick:AHU .
+}
+
+# TEST 2-2: AHUからVAVへの接続を確認
+SELECT ?ahu ?vav
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:feeds ?vav .
+    ?vav a brick:VAV .
+}
+
+# TEST 2-3: VRFから小ゾーンへの接続を確認
+SELECT ?vrf (COUNT(?zone) as ?zone_count)
+WHERE {
+    ?vrf a brick:Variable_Frequency_Drive .
+    ?vrf brick:feeds ?zone .
+    ?zone a brick:HVAC_Zone .
+}
+GROUP BY ?vrf
+
+# TEST 2-4: 横断的構成の確認（VRF_Unit_1が複数の大ゾーンをまたぐか）
+SELECT DISTINCT ?vrf ?large_zone
+WHERE {
+    ex:VRF_Unit_1 brick:feeds ?small_zone .
+    ?small_zone brick:isPartOf ?large_zone .
+    ?large_zone a brick:HVAC_Zone .
+}
+# 期待値: 2つの異なる大ゾーン（1Aと1B）
+
+# ==========================================
+# テストケース3: センサー配置の検証
+# ==========================================
+
+# TEST 3-1: 外調機に必要なセンサーが揃っているか確認
+SELECT ?ahu (COUNT(?sensor) as ?sensor_count)
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:hasPoint ?sensor .
+    ?sensor a brick:Sensor .
+}
+GROUP BY ?ahu
+# 期待値: AHU1に6個、AHU2に4個のセンサー
+
+# TEST 3-2: 各AHUに外気温センサーがあるか確認
+SELECT ?ahu ?outside_temp_sensor
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:hasPoint ?outside_temp_sensor .
+    ?outside_temp_sensor a brick:Outside_Air_Temperature_Sensor .
+}
+# 期待値: 2つのAHUそれぞれに外気温センサー
+
+# TEST 3-3: 各AHUに還気温度・湿度センサーがあるか確認
+SELECT ?ahu ?return_temp ?return_humidity
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:hasPoint ?return_temp .
+    ?return_temp a brick:Return_Air_Temperature_Sensor .
+    ?ahu brick:hasPoint ?return_humidity .
+    ?return_humidity a brick:Return_Air_Humidity_Sensor .
+}
+# 期待値: 2つのAHU
+
+# TEST 3-4: 全てのVRFに電力センサーがあるか確認
+SELECT ?vrf ?power_sensor
+WHERE {
+    ?vrf a brick:Variable_Frequency_Drive .
+    OPTIONAL { 
+        ?vrf brick:hasPoint ?power_sensor .
+        ?power_sensor a brick:Electric_Power_Sensor .
+    }
+    FILTER (!BOUND(?power_sensor))
+}
+# 期待値: 結果なし（全てのVRFに電力センサーがある）
+
+# ==========================================
+# テストケース4: センサーデータの妥当性検証
+# ==========================================
+
+# TEST 4-1: 外気温が合理的な範囲か確認（-20℃～50℃）
+SELECT ?sensor ?value ?timestamp
+WHERE {
+    ?sensor a brick:Outside_Air_Temperature_Sensor .
+    ?sensor brick:lastKnownValue ?value_node .
+    ?value_node brick:value ?value .
+    ?value_node brick:timestamp ?timestamp .
+    FILTER (?value < -20 || ?value > 50)
+}
+# 期待値: 結果なし
+
+# TEST 4-2: 室温が合理的な範囲か確認（15℃～30℃）
+SELECT ?sensor ?value ?timestamp
+WHERE {
+    ?sensor a brick:Zone_Air_Temperature_Sensor .
+    ?sensor brick:lastKnownValue ?value_node .
+    ?value_node brick:value ?value .
+    ?value_node brick:timestamp ?timestamp .
+    FILTER (?value < 15 || ?value > 30)
+}
+# 期待値: 結果なし
+
+# TEST 4-3: 湿度が0-100%の範囲内か確認
+SELECT ?sensor ?value ?timestamp
+WHERE {
+    ?sensor a brick:Humidity_Sensor .
+    ?sensor brick:lastKnownValue ?value_node .
+    ?value_node brick:value ?value .
+    ?value_node brick:timestamp ?timestamp .
+    FILTER (?value < 0 || ?value > 100)
+}
+# 期待値: 結果なし
+
+# TEST 4-4: チラーの供給水温が還水温より低いか確認
+SELECT ?supply_temp ?return_temp
+WHERE {
+    ex:Chiller1_Supply_Water_Temp_Sensor brick:lastKnownValue ?supply_node .
+    ex:Chiller1_Return_Water_Temp_Sensor brick:lastKnownValue ?return_node .
+    ?supply_node brick:value ?supply_temp .
+    ?return_node brick:value ?return_temp .
+    FILTER (?supply_temp >= ?return_temp)
+}
+# 期待値: 結果なし（供給水温 < 還水温）
+
+# ==========================================
+# テストケース5: 省エネ分析クエリ
+# ==========================================
+
+# TEST 5-1: 外気冷房が適用可能か判定（外気温 < 還気温）
+SELECT ?ahu ?outside_temp ?return_temp 
+       (?return_temp - ?outside_temp as ?temp_diff)
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:hasPoint ?outside_sensor .
+    ?outside_sensor a brick:Outside_Air_Temperature_Sensor .
+    ?outside_sensor brick:lastKnownValue ?outside_node .
+    ?outside_node brick:value ?outside_temp .
+    
+    ?ahu brick:hasPoint ?return_sensor .
+    ?return_sensor a brick:Return_Air_Temperature_Sensor .
+    ?return_sensor brick:lastKnownValue ?return_node .
+    ?return_node brick:value ?return_temp .
+    
+    FILTER (?outside_temp < ?return_temp)
+}
+# 期待値: 外気冷房が適用可能なAHUのリスト
+
+# TEST 5-2: 総消費電力の計算
+SELECT (SUM(?power) as ?total_power)
+WHERE {
+    ?equipment brick:hasPoint ?power_sensor .
+    ?power_sensor a brick:Electric_Power_Sensor .
+    ?power_sensor brick:lastKnownValue ?power_node .
+    ?power_node brick:value ?power .
+}
+# 期待値: チラー + 3台のVRFの合計電力
+
+# TEST 5-3: VRFごとの消費電力とカバーゾーン数
+SELECT ?vrf ?power (COUNT(?zone) as ?zone_count)
+WHERE {
+    ?vrf a brick:Variable_Frequency_Drive .
+    ?vrf brick:hasPoint ?power_sensor .
+    ?power_sensor a brick:Electric_Power_Sensor .
+    ?power_sensor brick:lastKnownValue ?power_node .
+    ?power_node brick:value ?power .
+    
+    ?vrf brick:feeds ?zone .
+}
+GROUP BY ?vrf ?power
+ORDER BY DESC(?power)
+
+# TEST 5-4: 室温が設定範囲外の部屋を検出（想定範囲: 22-26℃）
+SELECT ?room ?temp ?timestamp
+WHERE {
+    ?room a brick:Room .
+    ?room brick:hasPoint ?temp_sensor .
+    ?temp_sensor a brick:Zone_Air_Temperature_Sensor .
+    ?temp_sensor brick:lastKnownValue ?temp_node .
+    ?temp_node brick:value ?temp .
+    ?temp_node brick:timestamp ?timestamp .
+    FILTER (?temp < 22 || ?temp > 26)
+}
+
+# TEST 5-5: 給気温度と還気温度の差分（冷房効果）
+SELECT ?ahu ?supply_temp ?return_temp 
+       (?return_temp - ?supply_temp as ?cooling_effect)
+WHERE {
+    ?ahu a brick:AHU .
+    ?ahu brick:hasPoint ?supply_sensor .
+    ?supply_sensor a brick:Supply_Air_Temperature_Sensor .
+    ?supply_sensor brick:lastKnownValue ?supply_node .
+    ?supply_node brick:value ?supply_temp .
+    
+    ?ahu brick:hasPoint ?return_sensor .
+    ?return_sensor a brick:Return_Air_Temperature_Sensor .
+    ?return_sensor brick:lastKnownValue ?return_node .
+    ?return_node brick:value ?return_temp .
+}
+
+# ==========================================
+# テストケース6: 詳細分析クエリ
+# ==========================================
+
+# TEST 6-1: フロアごとの平均室温
+SELECT ?floor (AVG(?temp) as ?avg_temp) (COUNT(?room) as ?room_count)
+WHERE {
+    ?floor a brick:Floor .
+    ?floor brick:hasPart+ ?room .
+    ?room a brick:Room .
+    OPTIONAL {
+        ?room brick:hasPoint ?temp_sensor .
+        ?temp_sensor a brick:Zone_Air_Temperature_Sensor .
+        ?temp_sensor brick:lastKnownValue ?temp_node .
+        ?temp_node brick:value ?temp .
+    }
+    FILTER (BOUND(?temp))
+}
+GROUP BY ?floor
+
+# TEST 6-2: 大ゾーンごとのVRF消費電力合計
+SELECT ?large_zone (SUM(?power) as ?total_vrf_power)
+WHERE {
+    ?large_zone a brick:HVAC_Zone .
+    FILTER NOT EXISTS { ?large_zone brick:isPartOf ?parent . ?parent a brick:HVAC_Zone }
+    
+    ?large_zone brick:hasPart ?small_zone .
+    ?small_zone brick:isFedBy ?vrf .
+    ?vrf a brick:Variable_Frequency_Drive .
+    ?vrf brick:hasPoint ?power_sensor .
+    ?power_sensor brick:lastKnownValue ?power_node .
+    ?power_node brick:value ?power .
+}
+GROUP BY ?large_zone
+
+# TEST 6-3: 全センサーの最終更新時刻を確認
+SELECT ?sensor ?timestamp
+WHERE {
+    ?sensor a brick:Sensor .
+    ?sensor brick:lastKnownValue ?value_node .
+    ?value_node brick:timestamp ?timestamp .
+}
+ORDER BY ?timestamp
+
+# TEST 6-4: タイムスタンプが古いセンサーを検出（24時間以上前）
+SELECT ?sensor ?timestamp
+WHERE {
+    ?sensor a brick:Sensor .
+    ?sensor brick:lastKnownValue ?value_node .
+    ?value_node brick:timestamp ?timestamp .
+    BIND(NOW() AS ?current_time)
+    FILTER (?timestamp < ?current_time - "P1D"^^xsd:duration)
+}
+
+# ==========================================
+# 実行方法
+# ==========================================
+#
+# Apache Jena Fuseki または Stardog などのRDFストアを使用して、
+# 以下の手順でクエリを実行できます:
+#
+# 1. RDFストアにモデルをロード:
+#    - hvac_information_model.ttl
+#    - building_example_with_data.ttl
+#
+# 2. 各テストクエリを実行
+#
+# 3. 期待値と実際の結果を比較
+#
+# コマンドライン例（Apache Jena Arq使用）:
+# $ arq --data hvac_information_model.ttl \
+#       --data building_example_with_data.ttl \
+#       --query test_queries.sparql
+#
+# ==========================================

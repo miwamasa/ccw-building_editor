@@ -1,0 +1,277 @@
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix ex: <https://example.com/building#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ==========================================
+# 具体的なビルの例: 東京オフィスビル
+# ==========================================
+# 
+# 建物名: 東京グリーンタワー
+# 所在地: 東京都千代田区
+# 延床面積: 2,400㎡ (各階1,200㎡)
+# 竣工: 2022年
+# 空調方式: ハイブリッド空調(全館+個別)
+# ==========================================
+
+# この例では、2025年10月23日 午後2時のセンサーデータを示します
+
+# -----------------------------
+# 外気条件 (2025/10/23 14:00)
+# -----------------------------
+
+ex:AHU1_Outside_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "22.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+ex:AHU2_Outside_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "22.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# -----------------------------
+# チラーの運転状態
+# -----------------------------
+
+ex:Chiller1_Supply_Water_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "7.0"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "冷水供給温度は7℃に設定"
+    ] .
+
+ex:Chiller1_Return_Water_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "12.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "還水温度: 冷房負荷により上昇"
+    ] .
+
+ex:Chiller1_Power_Sensor
+    brick:lastKnownValue [
+        brick:value "45.2"^^xsd:float ;
+        brick:hasUnit unit:KiloW ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "チラー消費電力: 中負荷運転中"
+    ] .
+
+# -----------------------------
+# 外調機1号機 (1階担当)
+# -----------------------------
+
+ex:AHU1_Supply_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "16.0"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "給気温度: 冷房モード"
+    ] .
+
+ex:AHU1_Return_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "24.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "還気温度: 室内から戻ってきた空気"
+    ] .
+
+ex:AHU1_Return_Air_Humidity_Sensor
+    brick:lastKnownValue [
+        brick:value "52.0"^^xsd:float ;
+        brick:hasUnit unit:PERCENT ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "還気湿度: 快適範囲内"
+    ] .
+
+ex:AHU1_Mixed_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "23.8"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "外気と還気の混合後の温度"
+    ] .
+
+ex:AHU1_Supply_Air_Flow_Sensor
+    brick:lastKnownValue [
+        brick:value "8500.0"^^xsd:float ;
+        brick:hasUnit unit:M3-PER-HR ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "給気風量: 通常運転"
+    ] .
+
+# -----------------------------
+# 外調機2号機 (2階担当)
+# -----------------------------
+
+ex:AHU2_Supply_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "15.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+ex:AHU2_Return_Air_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "25.2"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "2階は日射の影響で1階より高め"
+    ] .
+
+ex:AHU2_Return_Air_Humidity_Sensor
+    brick:lastKnownValue [
+        brick:value "48.0"^^xsd:float ;
+        brick:hasUnit unit:PERCENT ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# -----------------------------
+# VAVの運転状態
+# -----------------------------
+
+ex:VAV_1A1_Damper_Position
+    brick:lastKnownValue [
+        brick:value "75.0"^^xsd:float ;
+        brick:hasUnit unit:PERCENT ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "ダンパー開度75%: 中負荷運転"
+    ] .
+
+ex:VAV_1A1_Discharge_Air_Flow
+    brick:lastKnownValue [
+        brick:value "3200.0"^^xsd:float ;
+        brick:hasUnit unit:M3-PER-HR ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# -----------------------------
+# VRF室外機の運転状態
+# -----------------------------
+
+ex:VRF1_Outdoor_Unit_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "28.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "室外機周辺温度: 日射の影響あり"
+    ] .
+
+ex:VRF1_Power_Sensor
+    brick:lastKnownValue [
+        brick:value "12.3"^^xsd:float ;
+        brick:hasUnit unit:KiloW ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "VRF1号機消費電力"
+    ] .
+
+ex:VRF2_Outdoor_Unit_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "27.8"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+ex:VRF2_Power_Sensor
+    brick:lastKnownValue [
+        brick:value "8.7"^^xsd:float ;
+        brick:hasUnit unit:KiloW ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "VRF2号機消費電力: サーバールーム冷房中"
+    ] .
+
+ex:VRF3_Outdoor_Unit_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "29.2"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "2階屋上設置のため温度高め"
+    ] .
+
+ex:VRF3_Power_Sensor
+    brick:lastKnownValue [
+        brick:value "10.5"^^xsd:float ;
+        brick:hasUnit unit:KiloW ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# -----------------------------
+# 室内環境 (代表的な部屋)
+# -----------------------------
+
+# 会議室101 (使用中)
+ex:Room_101_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "23.5"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "会議中のため人体発熱あり"
+    ] .
+
+ex:Room_101_Humidity_Sensor
+    brick:lastKnownValue [
+        brick:value "54.0"^^xsd:float ;
+        brick:hasUnit unit:PERCENT ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# サーバールーム105 (24時間冷房)
+ex:Room_105_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "22.0"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "サーバー保護のため低温維持"
+    ] .
+
+# オープンオフィス202 (2階)
+ex:Room_202_Temp_Sensor
+    brick:lastKnownValue [
+        brick:value "24.8"^^xsd:float ;
+        brick:hasUnit unit:DEG_C ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime ;
+        rdfs:comment "日射の影響で設定値より高め"
+    ] .
+
+ex:Room_202_Humidity_Sensor
+    brick:lastKnownValue [
+        brick:value "49.0"^^xsd:float ;
+        brick:hasUnit unit:PERCENT ;
+        brick:timestamp "2025-10-23T14:00:00+09:00"^^xsd:dateTime
+    ] .
+
+# ==========================================
+# 省エネ分析の観察ポイント
+# ==========================================
+
+# 1. 外気冷房のチャンス
+#    外気温(22.5℃) < 還気温(24.5℃)
+#    → 外気導入量を増やすことで冷房負荷を削減可能
+#
+# 2. チラー効率の改善
+#    外気温が23℃程度と低めなので、冷水温度を
+#    7℃から8℃に上げることでチラー効率向上の余地あり
+#
+# 3. 2階の温度管理
+#    2階還気温(25.2℃)が1階(24.5℃)より高い
+#    → 日射遮蔽や送風量調整で改善可能
+#
+# 4. VRFとセントラルのバランス
+#    全体消費電力:
+#    - チラー: 45.2 kW
+#    - VRF合計: 31.5 kW (12.3 + 8.7 + 10.5)
+#    → 総計 76.7 kW
+#    全館空調と個別空調の負荷配分を最適化の余地あり
+#
+# 5. サーバールームの最適化
+#    サーバールーム(105)は22℃維持が必要だが、
+#    他の部屋との温度差により個別空調の負荷が増加
+#    → 全館空調との協調制御で効率化可能
+#
+# ==========================================

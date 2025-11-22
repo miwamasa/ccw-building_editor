@@ -1,0 +1,400 @@
+{
+  "building": {
+    "id": "Building_A",
+    "name": "東京グリーンタワー",
+    "location": "東京都千代田区",
+    "totalArea": 2400
+  },
+  "floors": [
+    {
+      "id": "Floor_1",
+      "name": "1階",
+      "area": 1200
+    },
+    {
+      "id": "Floor_2",
+      "name": "2階",
+      "area": 1200
+    }
+  ],
+  "largeZones": [
+    {
+      "id": "LargeZone_1A",
+      "name": "大ゾーン1A(東側エリア)",
+      "floorId": "Floor_1",
+      "ahuId": "AHU_1"
+    },
+    {
+      "id": "LargeZone_1B",
+      "name": "大ゾーン1B(西側エリア)",
+      "floorId": "Floor_1",
+      "ahuId": "AHU_1"
+    },
+    {
+      "id": "LargeZone_2A",
+      "name": "大ゾーン2A(全フロア)",
+      "floorId": "Floor_2",
+      "ahuId": "AHU_2"
+    }
+  ],
+  "smallZones": [
+    {
+      "id": "SmallZone_1A1",
+      "name": "小ゾーン1A1(会議室エリア)",
+      "largeZoneId": "LargeZone_1A",
+      "vrfId": "VRF_Unit_1"
+    },
+    {
+      "id": "SmallZone_1A2",
+      "name": "小ゾーン1A2(オフィスエリア)",
+      "largeZoneId": "LargeZone_1A",
+      "vrfId": "VRF_Unit_1"
+    },
+    {
+      "id": "SmallZone_1A3",
+      "name": "小ゾーン1A3(サーバールーム)",
+      "largeZoneId": "LargeZone_1A",
+      "vrfId": "VRF_Unit_2"
+    },
+    {
+      "id": "SmallZone_1B1",
+      "name": "小ゾーン1B1(執務室エリア)",
+      "largeZoneId": "LargeZone_1B",
+      "vrfId": "VRF_Unit_1",
+      "note": "横断構成の例: VRF_Unit_1が大ゾーン1Aと1Bをまたぐ"
+    },
+    {
+      "id": "SmallZone_1B2",
+      "name": "小ゾーン1B2(休憩室)",
+      "largeZoneId": "LargeZone_1B",
+      "vrfId": "VRF_Unit_2"
+    },
+    {
+      "id": "SmallZone_2A1",
+      "name": "小ゾーン2A1(役員室エリア)",
+      "largeZoneId": "LargeZone_2A",
+      "vrfId": "VRF_Unit_3"
+    },
+    {
+      "id": "SmallZone_2A2",
+      "name": "小ゾーン2A2(オープンオフィス)",
+      "largeZoneId": "LargeZone_2A",
+      "vrfId": "VRF_Unit_3"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "Room_101",
+      "name": "会議室101",
+      "smallZoneId": "SmallZone_1A1",
+      "area": 30
+    },
+    {
+      "id": "Room_102",
+      "name": "会議室102",
+      "smallZoneId": "SmallZone_1A1",
+      "area": 30
+    },
+    {
+      "id": "Room_103",
+      "name": "オフィス103",
+      "smallZoneId": "SmallZone_1A2",
+      "area": 50
+    },
+    {
+      "id": "Room_104",
+      "name": "オフィス104",
+      "smallZoneId": "SmallZone_1A2",
+      "area": 50
+    },
+    {
+      "id": "Room_105",
+      "name": "サーバールーム105",
+      "smallZoneId": "SmallZone_1A3",
+      "area": 40
+    },
+    {
+      "id": "Room_106",
+      "name": "執務室106",
+      "smallZoneId": "SmallZone_1B1",
+      "area": 80
+    },
+    {
+      "id": "Room_107",
+      "name": "休憩室107",
+      "smallZoneId": "SmallZone_1B2",
+      "area": 30
+    },
+    {
+      "id": "Room_201",
+      "name": "役員室201",
+      "smallZoneId": "SmallZone_2A1",
+      "area": 60
+    },
+    {
+      "id": "Room_202",
+      "name": "オープンオフィス202",
+      "smallZoneId": "SmallZone_2A2",
+      "area": 200
+    }
+  ],
+  "centralHVAC": {
+    "chillers": [
+      {
+        "id": "Chiller_1",
+        "name": "チラー1号機",
+        "capacity": 150,
+        "powerRating": 50
+      }
+    ],
+    "ahus": [
+      {
+        "id": "AHU_1",
+        "name": "外調機1号機(1階担当)",
+        "chillerId": "Chiller_1",
+        "airflow": 10000
+      },
+      {
+        "id": "AHU_2",
+        "name": "外調機2号機(2階担当)",
+        "chillerId": "Chiller_1",
+        "airflow": 8000
+      }
+    ],
+    "vavs": [
+      {
+        "id": "VAV_1A1",
+        "name": "VAV 1A-1",
+        "ahuId": "AHU_1",
+        "largeZoneId": "LargeZone_1A"
+      },
+      {
+        "id": "VAV_1A2",
+        "name": "VAV 1A-2",
+        "ahuId": "AHU_1",
+        "largeZoneId": "LargeZone_1A"
+      },
+      {
+        "id": "VAV_1B1",
+        "name": "VAV 1B-1",
+        "ahuId": "AHU_1",
+        "largeZoneId": "LargeZone_1B"
+      },
+      {
+        "id": "VAV_2A1",
+        "name": "VAV 2A-1",
+        "ahuId": "AHU_2",
+        "largeZoneId": "LargeZone_2A"
+      }
+    ]
+  },
+  "individualHVAC": {
+    "vrfs": [
+      {
+        "id": "VRF_Unit_1",
+        "name": "VRF室外機1号機",
+        "capacity": 40,
+        "powerRating": 15,
+        "note": "横断構成: 小ゾーン1A1, 1A2, 1B1を担当(大ゾーン1Aと1Bをまたぐ)"
+      },
+      {
+        "id": "VRF_Unit_2",
+        "name": "VRF室外機2号機",
+        "capacity": 30,
+        "powerRating": 12,
+        "note": "小ゾーン1A3, 1B2を担当"
+      },
+      {
+        "id": "VRF_Unit_3",
+        "name": "VRF室外機3号機(2階専用)",
+        "capacity": 35,
+        "powerRating": 13,
+        "note": "小ゾーン2A1, 2A2を担当"
+      }
+    ]
+  },
+  "sensors": [
+    {
+      "id": "AHU1_Outside_Air_Temp",
+      "name": "外調機1_外気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_1",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU1_Supply_Air_Temp",
+      "name": "外調機1_給気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_1",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU1_Return_Air_Temp",
+      "name": "外調機1_還気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_1",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU1_Return_Air_Humidity",
+      "name": "外調機1_還気湿度センサー",
+      "type": "humidity",
+      "equipmentId": "AHU_1",
+      "unit": "%"
+    },
+    {
+      "id": "AHU1_Mixed_Air_Temp",
+      "name": "外調機1_混合空気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_1",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU1_Supply_Air_Flow",
+      "name": "外調機1_給気風量センサー",
+      "type": "flow",
+      "equipmentId": "AHU_1",
+      "unit": "m³/h"
+    },
+    {
+      "id": "AHU2_Outside_Air_Temp",
+      "name": "外調機2_外気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_2",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU2_Supply_Air_Temp",
+      "name": "外調機2_給気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_2",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU2_Return_Air_Temp",
+      "name": "外調機2_還気温度センサー",
+      "type": "temperature",
+      "equipmentId": "AHU_2",
+      "unit": "°C"
+    },
+    {
+      "id": "AHU2_Return_Air_Humidity",
+      "name": "外調機2_還気湿度センサー",
+      "type": "humidity",
+      "equipmentId": "AHU_2",
+      "unit": "%"
+    },
+    {
+      "id": "Chiller1_Supply_Water_Temp",
+      "name": "チラー1_供給水温度センサー",
+      "type": "temperature",
+      "equipmentId": "Chiller_1",
+      "unit": "°C"
+    },
+    {
+      "id": "Chiller1_Return_Water_Temp",
+      "name": "チラー1_還水温度センサー",
+      "type": "temperature",
+      "equipmentId": "Chiller_1",
+      "unit": "°C"
+    },
+    {
+      "id": "Chiller1_Power",
+      "name": "チラー1_電力センサー",
+      "type": "power",
+      "equipmentId": "Chiller_1",
+      "unit": "kW"
+    },
+    {
+      "id": "VRF1_Outdoor_Unit_Temp",
+      "name": "VRF1_室外機温度センサー",
+      "type": "temperature",
+      "equipmentId": "VRF_Unit_1",
+      "unit": "°C"
+    },
+    {
+      "id": "VRF1_Power",
+      "name": "VRF1_電力センサー",
+      "type": "power",
+      "equipmentId": "VRF_Unit_1",
+      "unit": "kW"
+    },
+    {
+      "id": "VRF2_Outdoor_Unit_Temp",
+      "name": "VRF2_室外機温度センサー",
+      "type": "temperature",
+      "equipmentId": "VRF_Unit_2",
+      "unit": "°C"
+    },
+    {
+      "id": "VRF2_Power",
+      "name": "VRF2_電力センサー",
+      "type": "power",
+      "equipmentId": "VRF_Unit_2",
+      "unit": "kW"
+    },
+    {
+      "id": "VRF3_Outdoor_Unit_Temp",
+      "name": "VRF3_室外機温度センサー",
+      "type": "temperature",
+      "equipmentId": "VRF_Unit_3",
+      "unit": "°C"
+    },
+    {
+      "id": "VRF3_Power",
+      "name": "VRF3_電力センサー",
+      "type": "power",
+      "equipmentId": "VRF_Unit_3",
+      "unit": "kW"
+    },
+    {
+      "id": "Room_101_Temp",
+      "name": "会議室101_室温センサー",
+      "type": "temperature",
+      "equipmentId": "Room_101",
+      "unit": "°C"
+    },
+    {
+      "id": "Room_101_Humidity",
+      "name": "会議室101_室湿度センサー",
+      "type": "humidity",
+      "equipmentId": "Room_101",
+      "unit": "%"
+    },
+    {
+      "id": "Room_105_Temp",
+      "name": "サーバールーム105_室温センサー",
+      "type": "temperature",
+      "equipmentId": "Room_105",
+      "unit": "°C"
+    },
+    {
+      "id": "Room_202_Temp",
+      "name": "オープンオフィス202_室温センサー",
+      "type": "temperature",
+      "equipmentId": "Room_202",
+      "unit": "°C"
+    },
+    {
+      "id": "Room_202_Humidity",
+      "name": "オープンオフィス202_室湿度センサー",
+      "type": "humidity",
+      "equipmentId": "Room_202",
+      "unit": "%"
+    },
+    {
+      "id": "VAV_1A1_Damper_Position",
+      "name": "VAV1A1_ダンパー開度センサー",
+      "type": "position",
+      "equipmentId": "VAV_1A1",
+      "unit": "%"
+    },
+    {
+      "id": "VAV_1A1_Discharge_Air_Flow",
+      "name": "VAV1A1_吹出風量センサー",
+      "type": "flow",
+      "equipmentId": "VAV_1A1",
+      "unit": "m³/h"
+    }
+  ]
+}

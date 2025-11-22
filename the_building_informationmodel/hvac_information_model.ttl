@@ -1,0 +1,411 @@
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix ex: <https://example.com/building#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# ==========================================
+# ハイブリッド空調システム 情報モデル
+# ==========================================
+# 
+# このモデルは以下を表現します:
+# 1. 全館空調(チラー、外調機、VAV)と個別空調(VRF)のハイブリッドシステム
+# 2. 階層的な空調ゾーン構造(大ゾーン→小ゾーン)
+# 3. 横断的な構成(個別空調が大ゾーンをまたぐケース)
+# 4. 省エネ運転検討のためのセンサー配置
+# ==========================================
+
+# -----------------------------
+# 建物構造の定義
+# -----------------------------
+
+ex:Building_A a brick:Building ;
+    rdfs:label "オフィスビルA" ;
+    brick:hasPart ex:Floor_1, ex:Floor_2 .
+
+ex:Floor_1 a brick:Floor ;
+    rdfs:label "1階" ;
+    brick:isPartOf ex:Building_A ;
+    brick:hasPart ex:LargeZone_1A, ex:LargeZone_1B .
+
+ex:Floor_2 a brick:Floor ;
+    rdfs:label "2階" ;
+    brick:isPartOf ex:Building_A ;
+    brick:hasPart ex:LargeZone_2A .
+
+# -----------------------------
+# 大ゾーン(全館空調担当エリア)
+# -----------------------------
+
+ex:LargeZone_1A a brick:HVAC_Zone ;
+    rdfs:label "大ゾーン1A(東側エリア)" ;
+    rdfs:comment "全館空調システムが担当する大空調ゾーン" ;
+    brick:isPartOf ex:Floor_1 ;
+    brick:hasPart ex:SmallZone_1A1, ex:SmallZone_1A2, ex:SmallZone_1A3 ;
+    brick:isFedBy ex:AHU_1 .
+
+ex:LargeZone_1B a brick:HVAC_Zone ;
+    rdfs:label "大ゾーン1B(西側エリア)" ;
+    rdfs:comment "全館空調システムが担当する大空調ゾーン" ;
+    brick:isPartOf ex:Floor_1 ;
+    brick:hasPart ex:SmallZone_1B1, ex:SmallZone_1B2 ;
+    brick:isFedBy ex:AHU_1 .
+
+ex:LargeZone_2A a brick:HVAC_Zone ;
+    rdfs:label "大ゾーン2A(全フロア)" ;
+    rdfs:comment "全館空調システムが担当する大空調ゾーン" ;
+    brick:isPartOf ex:Floor_2 ;
+    brick:hasPart ex:SmallZone_2A1, ex:SmallZone_2A2 ;
+    brick:isFedBy ex:AHU_2 .
+
+# -----------------------------
+# 小ゾーン(個別空調担当エリア)
+# -----------------------------
+
+ex:SmallZone_1A1 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン1A1(会議室エリア)" ;
+    rdfs:comment "個別空調(VRF)が担当する小空調ゾーン" ;
+    brick:isPartOf ex:LargeZone_1A ;
+    brick:hasPart ex:Room_101, ex:Room_102 ;
+    brick:isFedBy ex:VRF_Unit_1 .
+
+ex:SmallZone_1A2 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン1A2(オフィスエリア)" ;
+    brick:isPartOf ex:LargeZone_1A ;
+    brick:hasPart ex:Room_103, ex:Room_104 ;
+    brick:isFedBy ex:VRF_Unit_1 .
+
+ex:SmallZone_1A3 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン1A3(サーバールーム)" ;
+    brick:isPartOf ex:LargeZone_1A ;
+    brick:hasPart ex:Room_105 ;
+    brick:isFedBy ex:VRF_Unit_2 .
+
+ex:SmallZone_1B1 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン1B1(執務室エリア)" ;
+    rdfs:comment "横断的構成の例: VRF_Unit_1が大ゾーン1Aと1Bをまたいで担当" ;
+    brick:isPartOf ex:LargeZone_1B ;
+    brick:hasPart ex:Room_106 ;
+    brick:isFedBy ex:VRF_Unit_1 .
+
+ex:SmallZone_1B2 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン1B2(休憩室)" ;
+    brick:isPartOf ex:LargeZone_1B ;
+    brick:hasPart ex:Room_107 ;
+    brick:isFedBy ex:VRF_Unit_2 .
+
+ex:SmallZone_2A1 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン2A1(役員室エリア)" ;
+    brick:isPartOf ex:LargeZone_2A ;
+    brick:hasPart ex:Room_201 ;
+    brick:isFedBy ex:VRF_Unit_3 .
+
+ex:SmallZone_2A2 a brick:HVAC_Zone ;
+    rdfs:label "小ゾーン2A2(オープンオフィス)" ;
+    brick:isPartOf ex:LargeZone_2A ;
+    brick:hasPart ex:Room_202 ;
+    brick:isFedBy ex:VRF_Unit_3 .
+
+# -----------------------------
+# 室の定義
+# -----------------------------
+
+ex:Room_101 a brick:Room ; rdfs:label "会議室101" ; brick:isPartOf ex:SmallZone_1A1 .
+ex:Room_102 a brick:Room ; rdfs:label "会議室102" ; brick:isPartOf ex:SmallZone_1A1 .
+ex:Room_103 a brick:Room ; rdfs:label "オフィス103" ; brick:isPartOf ex:SmallZone_1A2 .
+ex:Room_104 a brick:Room ; rdfs:label "オフィス104" ; brick:isPartOf ex:SmallZone_1A2 .
+ex:Room_105 a brick:Room ; rdfs:label "サーバールーム105" ; brick:isPartOf ex:SmallZone_1A3 .
+ex:Room_106 a brick:Room ; rdfs:label "執務室106" ; brick:isPartOf ex:SmallZone_1B1 .
+ex:Room_107 a brick:Room ; rdfs:label "休憩室107" ; brick:isPartOf ex:SmallZone_1B2 .
+ex:Room_201 a brick:Room ; rdfs:label "役員室201" ; brick:isPartOf ex:SmallZone_2A1 .
+ex:Room_202 a brick:Room ; rdfs:label "オープンオフィス202" ; brick:isPartOf ex:SmallZone_2A2 .
+
+# ==========================================
+# 全館空調システム (Central HVAC System)
+# ==========================================
+
+# -----------------------------
+# チラー(冷凍機)
+# -----------------------------
+
+ex:Chiller_1 a brick:Chiller ;
+    rdfs:label "チラー1号機" ;
+    rdfs:comment "全館空調用の冷水を生成" ;
+    brick:feeds ex:AHU_1, ex:AHU_2 ;
+    brick:hasPoint ex:Chiller1_Supply_Water_Temp_Sensor,
+                   ex:Chiller1_Return_Water_Temp_Sensor,
+                   ex:Chiller1_Power_Sensor .
+
+# -----------------------------
+# 外調機(Air Handling Unit)
+# -----------------------------
+
+ex:AHU_1 a brick:AHU ;
+    rdfs:label "外調機1号機(1階担当)" ;
+    rdfs:comment "大ゾーン1A, 1Bに外気処理済み空気を供給" ;
+    brick:isFedBy ex:Chiller_1 ;
+    brick:feeds ex:VAV_1A1, ex:VAV_1A2, ex:VAV_1B1 ;
+    brick:hasPoint ex:AHU1_Supply_Air_Temp_Sensor,
+                   ex:AHU1_Return_Air_Temp_Sensor,
+                   ex:AHU1_Return_Air_Humidity_Sensor,
+                   ex:AHU1_Outside_Air_Temp_Sensor,
+                   ex:AHU1_Mixed_Air_Temp_Sensor,
+                   ex:AHU1_Supply_Air_Flow_Sensor .
+
+ex:AHU_2 a brick:AHU ;
+    rdfs:label "外調機2号機(2階担当)" ;
+    rdfs:comment "大ゾーン2Aに外気処理済み空気を供給" ;
+    brick:isFedBy ex:Chiller_1 ;
+    brick:feeds ex:VAV_2A1 ;
+    brick:hasPoint ex:AHU2_Supply_Air_Temp_Sensor,
+                   ex:AHU2_Return_Air_Temp_Sensor,
+                   ex:AHU2_Return_Air_Humidity_Sensor,
+                   ex:AHU2_Outside_Air_Temp_Sensor .
+
+# -----------------------------
+# VAV(Variable Air Volume)
+# -----------------------------
+
+ex:VAV_1A1 a brick:VAV ;
+    rdfs:label "VAV 1A-1" ;
+    rdfs:comment "大ゾーン1A用VAV" ;
+    brick:isFedBy ex:AHU_1 ;
+    brick:feeds ex:LargeZone_1A ;
+    brick:hasPoint ex:VAV_1A1_Damper_Position,
+                   ex:VAV_1A1_Discharge_Air_Flow .
+
+ex:VAV_1A2 a brick:VAV ;
+    rdfs:label "VAV 1A-2" ;
+    rdfs:comment "大ゾーン1A用VAV(バックアップ)" ;
+    brick:isFedBy ex:AHU_1 ;
+    brick:feeds ex:LargeZone_1A .
+
+ex:VAV_1B1 a brick:VAV ;
+    rdfs:label "VAV 1B-1" ;
+    rdfs:comment "大ゾーン1B用VAV" ;
+    brick:isFedBy ex:AHU_1 ;
+    brick:feeds ex:LargeZone_1B .
+
+ex:VAV_2A1 a brick:VAV ;
+    rdfs:label "VAV 2A-1" ;
+    rdfs:comment "大ゾーン2A用VAV" ;
+    brick:isFedBy ex:AHU_2 ;
+    brick:feeds ex:LargeZone_2A .
+
+# ==========================================
+# 個別空調システム (Individual HVAC System)
+# ==========================================
+
+# -----------------------------
+# VRF(Variable Refrigerant Flow)
+# -----------------------------
+
+ex:VRF_Unit_1 a brick:Variable_Frequency_Drive ;  # VRFはBrickではVFDとして表現
+    rdfs:label "VRF室外機1号機" ;
+    rdfs:comment "横断構成の例: 小ゾーン1A1, 1A2, 1B1を担当(大ゾーン1Aと1Bをまたぐ)" ;
+    brick:feeds ex:SmallZone_1A1, ex:SmallZone_1A2, ex:SmallZone_1B1 ;
+    brick:hasPoint ex:VRF1_Outdoor_Unit_Temp_Sensor,
+                   ex:VRF1_Power_Sensor .
+
+ex:VRF_Unit_2 a brick:Variable_Frequency_Drive ;
+    rdfs:label "VRF室外機2号機" ;
+    rdfs:comment "小ゾーン1A3, 1B2を担当" ;
+    brick:feeds ex:SmallZone_1A3, ex:SmallZone_1B2 ;
+    brick:hasPoint ex:VRF2_Outdoor_Unit_Temp_Sensor,
+                   ex:VRF2_Power_Sensor .
+
+ex:VRF_Unit_3 a brick:Variable_Frequency_Drive ;
+    rdfs:label "VRF室外機3号機(2階専用)" ;
+    rdfs:comment "小ゾーン2A1, 2A2を担当" ;
+    brick:feeds ex:SmallZone_2A1, ex:SmallZone_2A2 ;
+    brick:hasPoint ex:VRF3_Outdoor_Unit_Temp_Sensor,
+                   ex:VRF3_Power_Sensor .
+
+# ==========================================
+# センサーポイント定義
+# ==========================================
+
+# -----------------------------
+# チラーのセンサー
+# -----------------------------
+
+ex:Chiller1_Supply_Water_Temp_Sensor a brick:Supply_Water_Temperature_Sensor ;
+    rdfs:label "チラー1_供給水温度センサー" ;
+    brick:isPointOf ex:Chiller_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:Chiller1_Return_Water_Temp_Sensor a brick:Return_Water_Temperature_Sensor ;
+    rdfs:label "チラー1_還水温度センサー" ;
+    brick:isPointOf ex:Chiller_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:Chiller1_Power_Sensor a brick:Electric_Power_Sensor ;
+    rdfs:label "チラー1_電力センサー" ;
+    brick:isPointOf ex:Chiller_1 ;
+    brick:hasUnit unit:KiloW .
+
+# -----------------------------
+# 外調機(AHU)のセンサー
+# -----------------------------
+
+ex:AHU1_Supply_Air_Temp_Sensor a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "外調機1_給気温度センサー" ;
+    rdfs:comment "省エネ評価の重要指標" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU1_Return_Air_Temp_Sensor a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "外調機1_還気温度センサー" ;
+    rdfs:comment "冷房効率評価に使用" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU1_Return_Air_Humidity_Sensor a brick:Return_Air_Humidity_Sensor ;
+    rdfs:label "外調機1_還気湿度センサー" ;
+    rdfs:comment "除湿性能評価に使用" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:PERCENT .
+
+ex:AHU1_Outside_Air_Temp_Sensor a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "外調機1_外気温度センサー" ;
+    rdfs:comment "外気冷房の適用判断に使用" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU1_Mixed_Air_Temp_Sensor a brick:Mixed_Air_Temperature_Sensor ;
+    rdfs:label "外調機1_混合空気温度センサー" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU1_Supply_Air_Flow_Sensor a brick:Supply_Air_Flow_Sensor ;
+    rdfs:label "外調機1_給気風量センサー" ;
+    rdfs:comment "搬送動力評価に使用" ;
+    brick:isPointOf ex:AHU_1 ;
+    brick:hasUnit unit:M3-PER-HR .
+
+ex:AHU2_Supply_Air_Temp_Sensor a brick:Supply_Air_Temperature_Sensor ;
+    rdfs:label "外調機2_給気温度センサー" ;
+    brick:isPointOf ex:AHU_2 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU2_Return_Air_Temp_Sensor a brick:Return_Air_Temperature_Sensor ;
+    rdfs:label "外調機2_還気温度センサー" ;
+    brick:isPointOf ex:AHU_2 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:AHU2_Return_Air_Humidity_Sensor a brick:Return_Air_Humidity_Sensor ;
+    rdfs:label "外調機2_還気湿度センサー" ;
+    brick:isPointOf ex:AHU_2 ;
+    brick:hasUnit unit:PERCENT .
+
+ex:AHU2_Outside_Air_Temp_Sensor a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "外調機2_外気温度センサー" ;
+    brick:isPointOf ex:AHU_2 ;
+    brick:hasUnit unit:DEG_C .
+
+# -----------------------------
+# VAVのセンサー
+# -----------------------------
+
+ex:VAV_1A1_Damper_Position a brick:Damper_Position_Sensor ;
+    rdfs:label "VAV1A1_ダンパー開度センサー" ;
+    brick:isPointOf ex:VAV_1A1 ;
+    brick:hasUnit unit:PERCENT .
+
+ex:VAV_1A1_Discharge_Air_Flow a brick:Discharge_Air_Flow_Sensor ;
+    rdfs:label "VAV1A1_吹出風量センサー" ;
+    brick:isPointOf ex:VAV_1A1 ;
+    brick:hasUnit unit:M3-PER-HR .
+
+# -----------------------------
+# VRFのセンサー
+# -----------------------------
+
+ex:VRF1_Outdoor_Unit_Temp_Sensor a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "VRF1_室外機温度センサー" ;
+    brick:isPointOf ex:VRF_Unit_1 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:VRF1_Power_Sensor a brick:Electric_Power_Sensor ;
+    rdfs:label "VRF1_電力センサー" ;
+    rdfs:comment "個別空調の消費電力測定" ;
+    brick:isPointOf ex:VRF_Unit_1 ;
+    brick:hasUnit unit:KiloW .
+
+ex:VRF2_Outdoor_Unit_Temp_Sensor a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "VRF2_室外機温度センサー" ;
+    brick:isPointOf ex:VRF_Unit_2 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:VRF2_Power_Sensor a brick:Electric_Power_Sensor ;
+    rdfs:label "VRF2_電力センサー" ;
+    brick:isPointOf ex:VRF_Unit_2 ;
+    brick:hasUnit unit:KiloW .
+
+ex:VRF3_Outdoor_Unit_Temp_Sensor a brick:Outside_Air_Temperature_Sensor ;
+    rdfs:label "VRF3_室外機温度センサー" ;
+    brick:isPointOf ex:VRF_Unit_3 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:VRF3_Power_Sensor a brick:Electric_Power_Sensor ;
+    rdfs:label "VRF3_電力センサー" ;
+    brick:isPointOf ex:VRF_Unit_3 ;
+    brick:hasUnit unit:KiloW .
+
+# -----------------------------
+# 室内のセンサー(代表例)
+# -----------------------------
+
+ex:Room_101_Temp_Sensor a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "会議室101_室温センサー" ;
+    rdfs:comment "居住域の快適性評価" ;
+    brick:isPointOf ex:Room_101 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:Room_101_Humidity_Sensor a brick:Zone_Air_Humidity_Sensor ;
+    rdfs:label "会議室101_室湿度センサー" ;
+    brick:isPointOf ex:Room_101 ;
+    brick:hasUnit unit:PERCENT .
+
+ex:Room_105_Temp_Sensor a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "サーバールーム105_室温センサー" ;
+    rdfs:comment "サーバー室の温度管理" ;
+    brick:isPointOf ex:Room_105 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:Room_202_Temp_Sensor a brick:Zone_Air_Temperature_Sensor ;
+    rdfs:label "オープンオフィス202_室温センサー" ;
+    brick:isPointOf ex:Room_202 ;
+    brick:hasUnit unit:DEG_C .
+
+ex:Room_202_Humidity_Sensor a brick:Zone_Air_Humidity_Sensor ;
+    rdfs:label "オープンオフィス202_室湿度センサー" ;
+    brick:isPointOf ex:Room_202 ;
+    brick:hasUnit unit:PERCENT .
+
+# ==========================================
+# 省エネ運転検討のための分析ポイント
+# ==========================================
+# 
+# 1. 外気冷房の適用判断
+#    - AHU1_Outside_Air_Temp_Sensor と AHU1_Return_Air_Temp_Sensor を比較
+#    - 外気温 < 還気温 の場合、外気導入量を増やして冷房負荷削減
+#
+# 2. 冷水温度の最適化
+#    - Chiller1_Supply_Water_Temp_Sensor の設定値を外気温に応じて調整
+#    - 外気温が低い時は冷水温度を上げてチラー効率向上
+#
+# 3. VAV制御の最適化
+#    - VAV_Damper_Position と Zone_Air_Temperature_Sensor を連動
+#    - 必要最小限の風量で快適性を維持
+#
+# 4. VRFとセントラルの協調運転
+#    - 全館空調で基本負荷を処理
+#    - 個別空調で局所的な温度調整
+#    - 両システムの消費電力を監視して最適配分
+#
+# 5. 湿度管理の最適化
+#    - Return_Air_Humidity_Sensor で除湿負荷を把握
+#    - 過度な除湿を避けて再熱エネルギーを削減
+#
+# ==========================================
