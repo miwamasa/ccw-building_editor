@@ -532,6 +532,7 @@
             });
             const [physicalSensors, setPhysicalSensors] = useState([]);
             const [sensorMappings, setSensorMappings] = useState([]);
+            const [matchingMode, setMatchingMode] = useState('regex'); // 'regex' or 'ai'
             const [chatMessages, setChatMessages] = useState([]);
             const [apiKey, setApiKey] = useState('');
             const [apiProvider, setApiProvider] = useState('openai');
@@ -767,13 +768,313 @@
                 }
             };
 
-            // AI センサーマッピング（シミュレーション）
-            const performSensorMapping = () => {
-                if (!apiKey) {
-                    alert('API設定でAPIキーを入力してください');
-                    return;
+            // センサータイプマッピング（物理センサータイプ → オントロジータイプコード）
+            const SENSOR_TYPE_MAPPING = {
+                'temperature': 'TEMP',
+                'humidity': 'HUMD',
+                'power': 'POWR',
+                'flow': 'FLOW',
+                'pressure': 'PRES',
+                'position': 'POS',
+                'speed': 'SPD',
+                'frequency': 'FREQ',
+                'status': 'STAT',
+                'co2': 'CO2',
+                'occupancy': 'OCCP',
+                'illuminance': 'ILLM'
+            };
+
+            // 測定コンテキストキーワード
+            const MEASUREMENT_CONTEXT_KEYWORDS = {
+                'OUT': ['outdoor', 'outside', '外気', '屋外'],
+                'SUP_AIR': ['supply air', 'supply', '給気', 'SA'],
+                'RET_AIR': ['return air', 'return', '還気', 'RA'],
+                'SUP_WTR': ['supply water', 'chilled water supply', '冷水供給', '往き'],
+                'RET_WTR': ['return water', 'chilled water return', '冷水還り', '戻り'],
+                'AIR_FLW': ['air flow', '風量'],
+                'WTR_FLW': ['water flow', '水流量'],
+                'DMPR': ['damper', 'ダンパー'],
+                'FAN': ['fan', 'ファン'],
+                'FLTR': ['filter', 'フィルター'],
+                'COMP': ['compressor', '圧縮機'],
+                'AMB': ['ambient', 'room', 'zone', '室内', '環境'],
+                'UNIT': ['unit', 'equipment', '機器'],
+                'TOTAL': ['total', '合計', '全体']
+            };
+
+            // エンティティタイプキーワード
+            const ENTITY_TYPE_KEYWORDS = {
+                'BLD': ['building', '建物'],
+                'FLR': ['floor', '階'],
+                'LZN': ['large zone', 'largezone', 'ラージゾーン'],
+                'SZN': ['small zone', 'smallzone', 'スモールゾーン'],
+                'ROM': ['room', '部屋'],
+                'CHL': ['chiller', 'チラー'],
+                'AHU': ['ahu', 'air handling unit', 'エアハンドリングユニット'],
+                'VAV': ['vav', 'variable air volume'],
+                'VRF': ['vrf', 'variable refrigerant flow']
+            };
+
+            // エンティティID抽出パターン
+            const ENTITY_ID_PATTERNS = [
+                { pattern: /Building[_\s]?([A-Za-z0-9]+)/i, type: 'BLD' },
+                { pattern: /Floor[_\s]?(\d+)/i, type: 'FLR' },
+                { pattern: /LargeZone[_\s]?([A-Za-z0-9]+)/i, type: 'LZN' },
+                { pattern: /SmallZone[_\s]?([A-Za-z0-9]+)/i, type: 'SZN' },
+                { pattern: /Room[_\s]?(\d+)/i, type: 'ROM' },
+                { pattern: /Chiller[_\s]?(\d+)/i, type: 'CHL' },
+                { pattern: /AHU[_\s]?(\d+)/i, type: 'AHU' },
+                { pattern: /VAV[_\s]?([A-Za-z0-9]+)/i, type: 'VAV' },
+                { pattern: /VRF[_\s]?Unit[_\s]?(\d+)/i, type: 'VRF' }
+            ];
+
+            // 階層情報の動的生成
+            const generateHierarchyData = (buildingData) => {
+                const lines = [];
+
+                // 建物階層
+                lines.push(`■ 空間階層:`);
+                lines.push(`Building: ${buildingData.building.id} (${buildingData.building.name})`);
+
+                buildingData.floors.forEach(floor => {
+                    lines.push(`  └─ Floor: ${floor.id} (${floor.name})`);
+
+                    // LargeZoneの取得
+                    buildingData.largeZones
+                        .filter(lz => lz.floorId === floor.id)
+                        .forEach(lz => {
+                            lines.push(`      └─ LargeZone: ${lz.id} (${lz.name})`);
+
+                            // SmallZoneの取得
+                            buildingData.smallZones
+                                .filter(sz => sz.largeZoneId === lz.id)
+                                .forEach(sz => {
+                                    lines.push(`          └─ SmallZone: ${sz.id} (${sz.name})`);
+
+                                    // Roomの取得
+                                    buildingData.rooms
+                                        .filter(room => room.smallZoneId === sz.id)
+                                        .forEach(room => {
+                                            lines.push(`              └─ Room: ${room.id} (${room.name})`);
+                                        });
+                                });
+                        });
+                });
+
+                lines.push(``);
+                lines.push(`■ 設備階層:`);
+
+                // Chiller階層
+                buildingData.centralHVAC.chillers.forEach(chiller => {
+                    lines.push(`Chiller: ${chiller.id}`);
+
+                    // ChillerのAHU接続
+                    buildingData.centralHVAC.ahus
+                        .filter(ahu => ahu.chillerId === chiller.id)
+                        .forEach(ahu => {
+                            lines.push(`  └─ AHU: ${ahu.id}`);
+
+                            // AHUのVAV接続
+                            buildingData.centralHVAC.vavs
+                                .filter(vav => vav.ahuId === ahu.id)
+                                .forEach(vav => {
+                                    const lz = buildingData.largeZones.find(z => z.id === vav.servedZoneId);
+                                    lines.push(`      └─ VAV: ${vav.id} → LargeZone: ${vav.servedZoneId}${lz ? ' ('+lz.name+')' : ''}`);
+                                });
+                        });
+                });
+
+                // VRF階層
+                buildingData.individualHVAC.vrfs.forEach(vrf => {
+                    lines.push(`VRF: ${vrf.id}`);
+                    vrf.servedZoneIds.forEach(zoneId => {
+                        const sz = buildingData.smallZones.find(z => z.id === zoneId);
+                        lines.push(`  └─ SmallZone: ${zoneId}${sz ? ' ('+sz.name+')' : ''}`);
+                    });
+                });
+
+                return lines.join('\n');
+            };
+
+            // 正規表現ベースのマッチング
+            const regexBasedMatching = (generatedSensor, physicalSensor) => {
+                const genId = generatedSensor.id;
+                const physName = physicalSensor.name.toLowerCase();
+                const physLocation = (physicalSensor.location || '').toLowerCase();
+                const combinedText = `${physName} ${physLocation}`;
+
+                // 生成センサーIDの分解: EntityType:EntityID:Context:SensorType
+                const parts = genId.split(':');
+                if (parts.length !== 4) return { score: 0, details: {} };
+
+                const [entityType, entityId, context, sensorType] = parts;
+
+                let score = 0;
+                const details = {};
+
+                // 1. エンティティIDマッチング (40%)
+                const entityIdLower = entityId.toLowerCase().replace(/_/g, ' ');
+                if (combinedText.includes(entityIdLower)) {
+                    score += 0.4;
+                    details.entityIdMatch = true;
+                } else {
+                    // 部分マッチ
+                    const words = entityIdLower.split(' ');
+                    const matchedWords = words.filter(w => combinedText.includes(w));
+                    const partialScore = (matchedWords.length / words.length) * 0.4;
+                    score += partialScore;
+                    details.entityIdMatch = partialScore > 0;
+                    details.entityIdPartial = partialScore;
                 }
 
+                // 2. エンティティタイプマッチング (25%)
+                const typeKeywords = ENTITY_TYPE_KEYWORDS[entityType] || [];
+                if (typeKeywords.some(kw => combinedText.includes(kw.toLowerCase()))) {
+                    score += 0.25;
+                    details.entityTypeMatch = true;
+                }
+
+                // 3. 測定コンテキストマッチング (25%)
+                const contextKeywords = MEASUREMENT_CONTEXT_KEYWORDS[context] || [];
+                if (contextKeywords.some(kw => combinedText.includes(kw.toLowerCase()))) {
+                    score += 0.25;
+                    details.contextMatch = true;
+                }
+
+                // 4. センサータイプマッチング (基本確認)
+                const expectedSensorType = SENSOR_TYPE_MAPPING[physicalSensor.type];
+                if (expectedSensorType === sensorType) {
+                    details.sensorTypeMatch = true;
+                } else {
+                    // タイプが一致しない場合はスコアを大幅に減点
+                    score *= 0.3;
+                    details.sensorTypeMatch = false;
+                }
+
+                // 5. ボーナスキーワードマッチング (最大10%)
+                const bonusKeywords = [entityId.toLowerCase(), ...contextKeywords];
+                const bonusMatches = bonusKeywords.filter(kw => combinedText.includes(kw.toLowerCase())).length;
+                const bonusScore = Math.min(0.1, bonusMatches * 0.02);
+                score += bonusScore;
+                details.bonusScore = bonusScore;
+
+                return { score, details };
+            };
+
+            // AIベースのマッチング
+            const aiBasedMatching = async (generatedSensors, physicalSensors, buildingData) => {
+                if (!apiKey) {
+                    throw new Error('API設定でAPIキーを入力してください');
+                }
+
+                // 階層情報の動的生成
+                const hierarchyData = generateHierarchyData(buildingData);
+
+                // AIマッチング用プロンプト構築
+                const systemPrompt = `あなたは建物管理システムのセンサーマッチング専門家です。
+
+## センサー命名規則
+
+オントロジーベースのセンサーIDフォーマット:
+\`{EntityType}:{EntityID}:{MeasurementContext}:{SensorType}\`
+
+### EntityType (エンティティタイプ)
+- BLD: Building (建物)
+- FLR: Floor (階)
+- LZN: LargeZone (ラージゾーン)
+- SZN: SmallZone (スモールゾーン)
+- ROM: Room (部屋)
+- CHL: Chiller (チラー)
+- AHU: Air Handling Unit (エアハンドリングユニット)
+- VAV: Variable Air Volume (変風量ユニット)
+- VRF: Variable Refrigerant Flow (可変冷媒流量システム)
+
+### MeasurementContext (測定コンテキスト)
+- OUT: 外気・屋外
+- SUP_AIR: 給気
+- RET_AIR: 還気
+- SUP_WTR: 供給水
+- RET_WTR: 還水
+- AIR_FLW: 風量
+- WTR_FLW: 水流量
+- DMPR: ダンパー
+- FAN: ファン
+- FLTR: フィルター
+- COMP: 圧縮機
+- AMB: 環境・室内
+- UNIT: 機器全体
+- TOTAL: 合計・全体
+
+### SensorType (センサータイプ)
+- TEMP: 温度
+- HUMD: 湿度
+- POWR: 電力
+- FLOW: 流量
+- PRES: 圧力
+- POS: 位置
+- SPD: 速度
+- FREQ: 周波数
+- STAT: 状態
+- CO2: CO2濃度
+- OCCP: 在室
+- ILLM: 照度
+
+## 建物階層構造
+
+${hierarchyData}
+
+## タスク
+
+以下の生成センサー（論理センサー）と物理センサー（実センサー）のリストを元に、最適なマッピングを行ってください。
+
+各生成センサーに対して、最も適合する物理センサーを特定し、信頼度スコア（0.0〜1.0）を付与してください。
+
+### 生成センサーリスト:
+${JSON.stringify(generatedSensors, null, 2)}
+
+### 物理センサーリスト:
+${JSON.stringify(physicalSensors, null, 2)}
+
+## 出力形式
+
+以下のJSON形式で出力してください:
+
+\`\`\`json
+{
+  "mappings": [
+    {
+      "generatedSensorId": "BLD:Building_A:OUT:TEMP",
+      "physicalSensorId": "OAT_001",
+      "confidence": 0.95,
+      "reason": "建物外気温度センサーとして、位置とタイプが完全一致"
+    }
+  ]
+}
+\`\`\`
+
+必ず信頼度0.5以上のマッピングのみを出力してください。`;
+
+                try {
+                    const response = await callActualAPI(systemPrompt, apiProvider, apiModel, apiEndpoint, apiKey);
+
+                    // JSONレスポンスのパース
+                    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || response.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) {
+                        throw new Error('AIのレスポンスからJSON形式のマッピング結果を抽出できませんでした');
+                    }
+
+                    const jsonText = jsonMatch[1] || jsonMatch[0];
+                    const result = JSON.parse(jsonText);
+
+                    return result.mappings || [];
+                } catch (error) {
+                    console.error('AI Matching Error:', error);
+                    throw error;
+                }
+            };
+
+            // センサーマッピング実行
+            const performSensorMapping = async () => {
                 if (physicalSensors.length === 0) {
                     alert('具体センサーCSVをインポートしてください');
                     return;
@@ -784,38 +1085,73 @@
                     return;
                 }
 
-                // AIマッピングのシミュレーション（実際のAI実装では、APIを呼び出す）
-                const mappings = [];
-                buildingData.sensors.forEach(genSensor => {
-                    // 簡易的なマッチングロジック（タイプと名前の類似性）
-                    physicalSensors.forEach(physSensor => {
-                        if (genSensor.type === physSensor.type) {
-                            const confidence = calculateSimilarity(genSensor.name, physSensor.name);
-                            if (confidence > 0.5) {
-                                mappings.push({
-                                    generatedSensorId: genSensor.id,
-                                    generatedSensorName: genSensor.name,
-                                    physicalSensorId: physSensor.id,
-                                    physicalSensorName: physSensor.name,
-                                    confidence: confidence,
-                                    reason: `タイプ一致: ${genSensor.type}, 名前類似度: ${(confidence * 100).toFixed(0)}%`
-                                });
+                try {
+                    let mappings = [];
+
+                    if (matchingMode === 'regex') {
+                        // 正規表現ベースのマッチング
+                        const allMatches = [];
+                        buildingData.sensors.forEach(genSensor => {
+                            physicalSensors.forEach(physSensor => {
+                                const result = regexBasedMatching(genSensor, physSensor);
+                                if (result.score > 0.5) {
+                                    allMatches.push({
+                                        generatedSensorId: genSensor.id,
+                                        generatedSensorName: genSensor.name,
+                                        physicalSensorId: physSensor.id,
+                                        physicalSensorName: physSensor.name,
+                                        confidence: result.score,
+                                        reason: `正規表現マッチング: スコア ${(result.score * 100).toFixed(0)}% (${
+                                            Object.keys(result.details).filter(k => result.details[k] === true).join(', ')
+                                        })`
+                                    });
+                                }
+                            });
+                        });
+
+                        // 各生成センサーに対して最も信頼度の高いマッピングのみを残す
+                        const bestMappings = {};
+                        allMatches.forEach(mapping => {
+                            const key = mapping.generatedSensorId;
+                            if (!bestMappings[key] || bestMappings[key].confidence < mapping.confidence) {
+                                bestMappings[key] = mapping;
                             }
+                        });
+
+                        mappings = Object.values(bestMappings);
+                        setSensorMappings(mappings);
+                        alert(`正規表現マッチングで${mappings.length}個のマッピングを生成しました`);
+
+                    } else if (matchingMode === 'ai') {
+                        // AIベースのマッチング
+                        if (!apiKey) {
+                            alert('AI マッチングにはAPI設定でAPIキーを入力してください');
+                            return;
                         }
-                    });
-                });
 
-                // 各生成センサーに対して最も信頼度の高いマッピングのみを残す
-                const bestMappings = {};
-                mappings.forEach(mapping => {
-                    const key = mapping.generatedSensorId;
-                    if (!bestMappings[key] || bestMappings[key].confidence < mapping.confidence) {
-                        bestMappings[key] = mapping;
+                        const aiMappings = await aiBasedMatching(buildingData.sensors, physicalSensors, buildingData);
+
+                        // AIの結果を表示形式に変換
+                        mappings = aiMappings.map(m => {
+                            const genSensor = buildingData.sensors.find(s => s.id === m.generatedSensorId);
+                            const physSensor = physicalSensors.find(s => s.id === m.physicalSensorId);
+                            return {
+                                generatedSensorId: m.generatedSensorId,
+                                generatedSensorName: genSensor ? genSensor.name : m.generatedSensorId,
+                                physicalSensorId: m.physicalSensorId,
+                                physicalSensorName: physSensor ? physSensor.name : m.physicalSensorId,
+                                confidence: m.confidence,
+                                reason: m.reason || 'AIマッチング'
+                            };
+                        });
+
+                        setSensorMappings(mappings);
+                        alert(`AI マッチングで${mappings.length}個のマッピングを生成しました`);
                     }
-                });
-
-                setSensorMappings(Object.values(bestMappings));
-                alert(`${Object.keys(bestMappings).length}個のマッピングを生成しました`);
+                } catch (error) {
+                    alert(`マッピングエラー: ${error.message}`);
+                    console.error('Mapping Error:', error);
+                }
             };
 
             // 簡易的な文字列類似度計算
@@ -1058,6 +1394,8 @@
                             mappings={sensorMappings}
                             onImportCSV={importPhysicalSensorsCSV}
                             onPerformMapping={performSensorMapping}
+                            matchingMode={matchingMode}
+                            onMatchingModeChange={setMatchingMode}
                         />;
                     case 'chat':
                         return <ChatInterface
@@ -2080,7 +2418,7 @@
         };
 
         // センサーマッピングコンポーネント
-        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping }) => {
+        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping, matchingMode, onMatchingModeChange }) => {
             return (
                 <>
                     <div className="toolbar">
@@ -2090,7 +2428,7 @@
                             <input type="file" accept=".csv" onChange={onImportCSV} />
                         </label>
                         <button className="btn btn-primary" onClick={onPerformMapping}>
-                            AIマッピング実行
+                            マッピング実行
                         </button>
                     </div>
                     <div className="content-area">
@@ -2098,8 +2436,45 @@
                             <h3>センサーマッピングとは？</h3>
                             <p>
                                 建物エディタで生成した論理的なセンサー（生成センサー）と、実際に建物に設置されている物理的なセンサー（具体センサー）を
-                                AIを使って自動的にマッピングします。具体センサーのCSVファイルを読み込み、「AIマッピング実行」ボタンをクリックしてください。
+                                自動的にマッピングします。具体センサーのCSVファイルを読み込み、マッチング方式を選択して、「マッピング実行」ボタンをクリックしてください。
                             </p>
+                            <div style={{marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px'}}>
+                                <h4 style={{marginTop: 0, marginBottom: '10px', fontSize: '14px'}}>マッチング方式:</h4>
+                                <div style={{display: 'flex', gap: '20px'}}>
+                                    <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
+                                        <input
+                                            type="radio"
+                                            name="matchingMode"
+                                            value="regex"
+                                            checked={matchingMode === 'regex'}
+                                            onChange={(e) => onMatchingModeChange(e.target.value)}
+                                            style={{marginRight: '8px'}}
+                                        />
+                                        <span>
+                                            <strong>正規表現マッチング</strong>
+                                            <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                                パターンマッチングによる高速マッチング（APIキー不要）
+                                            </div>
+                                        </span>
+                                    </label>
+                                    <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
+                                        <input
+                                            type="radio"
+                                            name="matchingMode"
+                                            value="ai"
+                                            checked={matchingMode === 'ai'}
+                                            onChange={(e) => onMatchingModeChange(e.target.value)}
+                                            style={{marginRight: '8px'}}
+                                        />
+                                        <span>
+                                            <strong>AIマッチング</strong>
+                                            <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                                AIによる高精度マッチング（APIキー必要、階層情報を活用）
+                                            </div>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="card">
