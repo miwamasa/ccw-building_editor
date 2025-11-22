@@ -948,7 +948,29 @@
                         setChatMessages(prev => [...prev, assistantMessage]);
                     } catch (error) {
                         // APIエラー時
-                        const errorMessage = `❌ API呼び出しエラー: ${error.message}\n\nプロバイダー: ${apiProvider}\nモデル: ${apiModel}\nエンドポイント: ${actualEndpoint}`;
+                        let errorMessage = `❌ API呼び出しエラー: ${error.message}\n\n`;
+                        let isCORSError = false;
+
+                        // CORSエラーの検出
+                        if (error.message.includes('Failed to fetch') ||
+                            error.message.includes('NetworkError') ||
+                            error.message.includes('CORS') ||
+                            error.name === 'TypeError') {
+                            isCORSError = true;
+                            errorMessage += `🚫 CORS（Cross-Origin Resource Sharing）エラーが発生しました。\n\n`;
+                            errorMessage += `これはブラウザのセキュリティ制限により、直接API呼び出しができないためです。\n\n`;
+                            errorMessage += `解決方法:\n`;
+                            errorMessage += `1. CORSプロキシを使用: カスタムエンドポイントに以下を設定\n`;
+                            errorMessage += `   https://cors-anywhere.herokuapp.com/${actualEndpoint.replace('https://', '')}\n\n`;
+                            errorMessage += `2. ローカルプロキシサーバーを立てる\n`;
+                            errorMessage += `3. ブラウザ拡張機能 "CORS Unblock" を使用\n`;
+                            errorMessage += `4. シミュレーションモード（APIキーを削除）を使用\n\n`;
+                            errorMessage += `詳細は「API設定」画面の警告メッセージを参照してください。\n`;
+                        } else {
+                            errorMessage += `プロバイダー: ${apiProvider}\n`;
+                            errorMessage += `モデル: ${apiModel}\n`;
+                            errorMessage += `エンドポイント: ${actualEndpoint}\n`;
+                        }
 
                         const debugInfoWithError = {
                             ...debugInfo,
@@ -956,7 +978,9 @@
                             responseLength: errorMessage.length,
                             responseTime: new Date().toISOString(),
                             apiCallSuccess: false,
-                            errorMessage: error.message
+                            errorMessage: error.message,
+                            isCORSError: isCORSError,
+                            errorType: error.name
                         };
 
                         const assistantMessage = {
@@ -2409,6 +2433,22 @@
                                                             </>
                                                         )}
 
+                                                        {msg.debug.isCORSError && (
+                                                            <>
+                                                                <span style={{fontWeight: 'bold'}}>CORSエラー:</span>
+                                                                <span style={{
+                                                                    color: '#dc2626',
+                                                                    fontSize: '12px',
+                                                                    fontWeight: 'bold',
+                                                                    background: '#fee2e2',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '3px'
+                                                                }}>
+                                                                    🚫 ブラウザセキュリティ制限 - API設定を確認
+                                                                </span>
+                                                            </>
+                                                        )}
+
                                                         <span style={{fontWeight: 'bold'}}>プロバイダー:</span>
                                                         <span>{msg.debug.provider}</span>
 
@@ -2619,6 +2659,26 @@
                                 </p>
                             </div>
                         )}
+
+                        <div className="api-config" style={{background: '#fef3c7', border: '1px solid #f59e0b'}}>
+                            <h3>⚠️ CORS制限について（重要）</h3>
+                            <p style={{fontSize: '13px', color: '#92400e', marginTop: '8px', marginBottom: '8px'}}>
+                                <strong>ブラウザから直接API呼び出しを行うとCORSエラーが発生します。</strong>
+                                これはブラウザのセキュリティ機能による制限です。
+                            </p>
+                            <p style={{fontSize: '12px', color: '#92400e', marginBottom: '8px'}}>
+                                <strong>解決方法（いずれかを選択）:</strong>
+                            </p>
+                            <ul style={{fontSize: '12px', color: '#92400e', marginLeft: '20px', marginBottom: '8px'}}>
+                                <li><strong>方法1: CORSプロキシを使用</strong> - カスタムエンドポイントに <code>https://cors-anywhere.herokuapp.com/</code> + 元のURL を設定（開発用のみ推奨）</li>
+                                <li><strong>方法2: ローカルプロキシサーバーを立てる</strong> - Node.js等でプロキシサーバーを作成し、カスタムエンドポイントに指定</li>
+                                <li><strong>方法3: ブラウザ拡張機能</strong> - "CORS Unblock" 等の拡張機能を使用（セキュリティリスクあり）</li>
+                                <li><strong>方法4: シミュレーションモード</strong> - APIキーを設定せず、簡易的なダミー応答を使用</li>
+                            </ul>
+                            <p style={{fontSize: '12px', color: '#92400e'}}>
+                                <strong>推奨:</strong> 本番環境では必ずバックエンドサーバーを経由してAPI呼び出しを行ってください。
+                            </p>
+                        </div>
 
                         <div className="card">
                             <h2>AI API設定</h2>
