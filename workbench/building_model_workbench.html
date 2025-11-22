@@ -584,9 +584,89 @@
                         ]
                     },
                     sensors: [
+                        // 建物全体センサー
+                        { id: 'Building_Outside_Temp', name: '建物外気温度センサー', type: 'temperature', equipmentId: 'Building_A', unit: '°C' },
+                        { id: 'Building_Outside_Humidity', name: '建物外気湿度センサー', type: 'humidity', equipmentId: 'Building_A', unit: '%RH' },
+                        { id: 'Building_Total_Power', name: '建物総電力量センサー', type: 'power', equipmentId: 'Building_A', unit: 'kW' },
+
+                        // チラー1号機センサー
+                        { id: 'Chiller1_Supply_Water_Temp', name: 'チラー1_送水温度センサー', type: 'temperature', equipmentId: 'Chiller_1', unit: '°C' },
+                        { id: 'Chiller1_Return_Water_Temp', name: 'チラー1_還水温度センサー', type: 'temperature', equipmentId: 'Chiller_1', unit: '°C' },
+                        { id: 'Chiller1_Water_Flow', name: 'チラー1_水流量センサー', type: 'flow', equipmentId: 'Chiller_1', unit: 'L/min' },
+                        { id: 'Chiller1_Power', name: 'チラー1_電力センサー', type: 'power', equipmentId: 'Chiller_1', unit: 'kW' },
+                        { id: 'Chiller1_Status', name: 'チラー1_運転状態センサー', type: 'status', equipmentId: 'Chiller_1', unit: 'on/off' },
+
+                        // 外調機1号機センサー（1階担当）
                         { id: 'AHU1_Outside_Air_Temp', name: '外調機1_外気温度センサー', type: 'temperature', equipmentId: 'AHU_1', unit: '°C' },
+                        { id: 'AHU1_Outside_Air_Humidity', name: '外調機1_外気湿度センサー', type: 'humidity', equipmentId: 'AHU_1', unit: '%RH' },
                         { id: 'AHU1_Supply_Air_Temp', name: '外調機1_給気温度センサー', type: 'temperature', equipmentId: 'AHU_1', unit: '°C' },
-                        { id: 'Room_101_Temp', name: '会議室101_室温センサー', type: 'temperature', equipmentId: 'Room_101', unit: '°C' }
+                        { id: 'AHU1_Supply_Air_Humidity', name: '外調機1_給気湿度センサー', type: 'humidity', equipmentId: 'AHU_1', unit: '%RH' },
+                        { id: 'AHU1_Return_Air_Temp', name: '外調機1_還気温度センサー', type: 'temperature', equipmentId: 'AHU_1', unit: '°C' },
+                        { id: 'AHU1_Return_Air_Humidity', name: '外調機1_還気湿度センサー', type: 'humidity', equipmentId: 'AHU_1', unit: '%RH' },
+                        { id: 'AHU1_Supply_Air_Flow', name: '外調機1_給気風量センサー', type: 'flow', equipmentId: 'AHU_1', unit: 'm³/h' },
+                        { id: 'AHU1_Damper_Position', name: '外調機1_ダンパー開度センサー', type: 'position', equipmentId: 'AHU_1', unit: '%' },
+                        { id: 'AHU1_Fan_Speed', name: '外調機1_ファン回転数センサー', type: 'speed', equipmentId: 'AHU_1', unit: 'rpm' },
+                        { id: 'AHU1_Power', name: '外調機1_電力センサー', type: 'power', equipmentId: 'AHU_1', unit: 'kW' },
+                        { id: 'AHU1_Filter_Pressure', name: '外調機1_フィルタ差圧センサー', type: 'pressure', equipmentId: 'AHU_1', unit: 'Pa' },
+
+                        // 外調機2号機センサー（2階担当）
+                        { id: 'AHU2_Outside_Air_Temp', name: '外調機2_外気温度センサー', type: 'temperature', equipmentId: 'AHU_2', unit: '°C' },
+                        { id: 'AHU2_Outside_Air_Humidity', name: '外調機2_外気湿度センサー', type: 'humidity', equipmentId: 'AHU_2', unit: '%RH' },
+                        { id: 'AHU2_Supply_Air_Temp', name: '外調機2_給気温度センサー', type: 'temperature', equipmentId: 'AHU_2', unit: '°C' },
+                        { id: 'AHU2_Supply_Air_Humidity', name: '外調機2_給気湿度センサー', type: 'humidity', equipmentId: 'AHU_2', unit: '%RH' },
+                        { id: 'AHU2_Return_Air_Temp', name: '外調機2_還気温度センサー', type: 'temperature', equipmentId: 'AHU_2', unit: '°C' },
+                        { id: 'AHU2_Return_Air_Humidity', name: '外調機2_還気湿度センサー', type: 'humidity', equipmentId: 'AHU_2', unit: '%RH' },
+                        { id: 'AHU2_Supply_Air_Flow', name: '外調機2_給気風量センサー', type: 'flow', equipmentId: 'AHU_2', unit: 'm³/h' },
+                        { id: 'AHU2_Damper_Position', name: '外調機2_ダンパー開度センサー', type: 'position', equipmentId: 'AHU_2', unit: '%' },
+                        { id: 'AHU2_Fan_Speed', name: '外調機2_ファン回転数センサー', type: 'speed', equipmentId: 'AHU_2', unit: 'rpm' },
+                        { id: 'AHU2_Power', name: '外調機2_電力センサー', type: 'power', equipmentId: 'AHU_2', unit: 'kW' },
+                        { id: 'AHU2_Filter_Pressure', name: '外調機2_フィルタ差圧センサー', type: 'pressure', equipmentId: 'AHU_2', unit: 'Pa' },
+
+                        // VAVセンサー
+                        { id: 'VAV_1A1_Supply_Air_Temp', name: 'VAV1A-1_給気温度センサー', type: 'temperature', equipmentId: 'VAV_1A1', unit: '°C' },
+                        { id: 'VAV_1A1_Damper_Position', name: 'VAV1A-1_ダンパー開度センサー', type: 'position', equipmentId: 'VAV_1A1', unit: '%' },
+                        { id: 'VAV_1A1_Air_Flow', name: 'VAV1A-1_風量センサー', type: 'flow', equipmentId: 'VAV_1A1', unit: 'm³/h' },
+
+                        // VRF室外機センサー
+                        { id: 'VRF1_Outdoor_Temp', name: 'VRF1_室外機温度センサー', type: 'temperature', equipmentId: 'VRF_Unit_1', unit: '°C' },
+                        { id: 'VRF1_Power', name: 'VRF1_電力センサー', type: 'power', equipmentId: 'VRF_Unit_1', unit: 'kW' },
+                        { id: 'VRF1_Operation_Status', name: 'VRF1_運転状態センサー', type: 'status', equipmentId: 'VRF_Unit_1', unit: 'on/off' },
+                        { id: 'VRF1_Compressor_Frequency', name: 'VRF1_圧縮機周波数センサー', type: 'frequency', equipmentId: 'VRF_Unit_1', unit: 'Hz' },
+
+                        // 大ゾーンセンサー
+                        { id: 'LargeZone_1A_Temp', name: '大ゾーン1A_温度センサー', type: 'temperature', equipmentId: 'LargeZone_1A', unit: '°C' },
+                        { id: 'LargeZone_1A_Humidity', name: '大ゾーン1A_湿度センサー', type: 'humidity', equipmentId: 'LargeZone_1A', unit: '%RH' },
+                        { id: 'LargeZone_1B_Temp', name: '大ゾーン1B_温度センサー', type: 'temperature', equipmentId: 'LargeZone_1B', unit: '°C' },
+                        { id: 'LargeZone_1B_Humidity', name: '大ゾーン1B_湿度センサー', type: 'humidity', equipmentId: 'LargeZone_1B', unit: '%RH' },
+                        { id: 'LargeZone_2A_Temp', name: '大ゾーン2A_温度センサー', type: 'temperature', equipmentId: 'LargeZone_2A', unit: '°C' },
+                        { id: 'LargeZone_2A_Humidity', name: '大ゾーン2A_湿度センサー', type: 'humidity', equipmentId: 'LargeZone_2A', unit: '%RH' },
+
+                        // 小ゾーンセンサー
+                        { id: 'SmallZone_1A1_Temp', name: '小ゾーン1A1_温度センサー', type: 'temperature', equipmentId: 'SmallZone_1A1', unit: '°C' },
+                        { id: 'SmallZone_1A1_Humidity', name: '小ゾーン1A1_湿度センサー', type: 'humidity', equipmentId: 'SmallZone_1A1', unit: '%RH' },
+                        { id: 'SmallZone_1A2_Temp', name: '小ゾーン1A2_温度センサー', type: 'temperature', equipmentId: 'SmallZone_1A2', unit: '°C' },
+                        { id: 'SmallZone_1A2_Humidity', name: '小ゾーン1A2_湿度センサー', type: 'humidity', equipmentId: 'SmallZone_1A2', unit: '%RH' },
+                        { id: 'SmallZone_1B1_Temp', name: '小ゾーン1B1_温度センサー', type: 'temperature', equipmentId: 'SmallZone_1B1', unit: '°C' },
+                        { id: 'SmallZone_1B1_Humidity', name: '小ゾーン1B1_湿度センサー', type: 'humidity', equipmentId: 'SmallZone_1B1', unit: '%RH' },
+
+                        // 部屋センサー
+                        { id: 'Room_101_Temp', name: '会議室101_室温センサー', type: 'temperature', equipmentId: 'Room_101', unit: '°C' },
+                        { id: 'Room_101_Humidity', name: '会議室101_湿度センサー', type: 'humidity', equipmentId: 'Room_101', unit: '%RH' },
+                        { id: 'Room_101_CO2', name: '会議室101_CO2センサー', type: 'co2', equipmentId: 'Room_101', unit: 'ppm' },
+                        { id: 'Room_101_Occupancy', name: '会議室101_在室センサー', type: 'occupancy', equipmentId: 'Room_101', unit: 'persons' },
+                        { id: 'Room_101_Illuminance', name: '会議室101_照度センサー', type: 'illuminance', equipmentId: 'Room_101', unit: 'lx' },
+
+                        { id: 'Room_102_Temp', name: '会議室102_室温センサー', type: 'temperature', equipmentId: 'Room_102', unit: '°C' },
+                        { id: 'Room_102_Humidity', name: '会議室102_湿度センサー', type: 'humidity', equipmentId: 'Room_102', unit: '%RH' },
+                        { id: 'Room_102_CO2', name: '会議室102_CO2センサー', type: 'co2', equipmentId: 'Room_102', unit: 'ppm' },
+                        { id: 'Room_102_Occupancy', name: '会議室102_在室センサー', type: 'occupancy', equipmentId: 'Room_102', unit: 'persons' },
+                        { id: 'Room_102_Illuminance', name: '会議室102_照度センサー', type: 'illuminance', equipmentId: 'Room_102', unit: 'lx' },
+
+                        { id: 'Room_103_Temp', name: 'オフィス103_室温センサー', type: 'temperature', equipmentId: 'Room_103', unit: '°C' },
+                        { id: 'Room_103_Humidity', name: 'オフィス103_湿度センサー', type: 'humidity', equipmentId: 'Room_103', unit: '%RH' },
+                        { id: 'Room_103_CO2', name: 'オフィス103_CO2センサー', type: 'co2', equipmentId: 'Room_103', unit: 'ppm' },
+                        { id: 'Room_103_Occupancy', name: 'オフィス103_在室センサー', type: 'occupancy', equipmentId: 'Room_103', unit: 'persons' },
+                        { id: 'Room_103_Illuminance', name: 'オフィス103_照度センサー', type: 'illuminance', equipmentId: 'Room_103', unit: 'lx' }
                     ]
                 };
                 setBuildingData(sample);
