@@ -717,7 +717,12 @@
 
             // JSONエクスポート
             const exportJSON = () => {
-                const dataStr = JSON.stringify(buildingData, null, 2);
+                // 建物データとマッピング情報を含めてエクスポート
+                const exportData = {
+                    buildingData: buildingData,
+                    sensorMappings: sensorMappings
+                };
+                const dataStr = JSON.stringify(exportData, null, 2);
                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
@@ -734,10 +739,21 @@
                     reader.onload = (e) => {
                         try {
                             const data = JSON.parse(e.target.result);
-                            setBuildingData(data);
-                            alert('JSONデータを読み込みました');
+
+                            // 新形式（buildingDataとsensorMappingsを含む）か旧形式（buildingDataのみ）かを判定
+                            if (data.buildingData && data.sensorMappings !== undefined) {
+                                // 新形式
+                                setBuildingData(data.buildingData);
+                                setSensorMappings(data.sensorMappings || []);
+                                alert('JSONデータとマッピング情報を読み込みました');
+                            } else {
+                                // 旧形式（後方互換性のため）
+                                setBuildingData(data);
+                                alert('JSONデータを読み込みました');
+                            }
                         } catch (error) {
                             alert('JSONファイルの読み込みに失敗しました');
+                            console.error(error);
                         }
                     };
                     reader.readAsText(file);
@@ -1118,7 +1134,8 @@ ${JSON.stringify(physicalSensors, null, 2)}
                                         confidence: result.score,
                                         reason: `正規表現マッチング: スコア ${(result.score * 100).toFixed(0)}% (${
                                             Object.keys(result.details).filter(k => result.details[k] === true).join(', ')
-                                        })`
+                                        })`,
+                                        enabled: true  // デフォルトで有効
                                     });
                                 }
                             });
@@ -1156,7 +1173,8 @@ ${JSON.stringify(physicalSensors, null, 2)}
                                 physicalSensorId: m.physicalSensorId,
                                 physicalSensorName: physSensor ? physSensor.name : m.physicalSensorId,
                                 confidence: m.confidence,
-                                reason: m.reason || 'AIマッチング'
+                                reason: m.reason || 'AIマッチング',
+                                enabled: true  // デフォルトで有効
                             };
                         });
 
@@ -1167,6 +1185,15 @@ ${JSON.stringify(physicalSensors, null, 2)}
                     alert(`マッピングエラー: ${error.message}`);
                     console.error('Mapping Error:', error);
                 }
+            };
+
+            // マッピングの有効/無効を切り替え
+            const toggleMappingEnabled = (index) => {
+                setSensorMappings(prev => {
+                    const updated = [...prev];
+                    updated[index] = { ...updated[index], enabled: !updated[index].enabled };
+                    return updated;
+                });
             };
 
             // 簡易的な文字列類似度計算
@@ -1230,10 +1257,13 @@ ${JSON.stringify(physicalSensors, null, 2)}
                 const userMessage = { role: 'user', content: message };
                 setChatMessages(prev => [...prev, userMessage]);
 
+                // 有効なマッピングのみをフィルタリング
+                const enabledMappings = sensorMappings.filter(m => m.enabled !== false);
+
                 // プロンプトテンプレートに変数を埋め込んで実際のプロンプトを生成
                 const actualPrompt = queryPromptTemplate
                     .replace('{buildingData}', JSON.stringify(buildingData, null, 2))
-                    .replace('{sensorMappings}', JSON.stringify(sensorMappings, null, 2))
+                    .replace('{sensorMappings}', JSON.stringify(enabledMappings, null, 2))
                     .replace('{query}', message);
 
                 const isAPIMode = !!apiKey;
@@ -1412,6 +1442,7 @@ ${JSON.stringify(physicalSensors, null, 2)}
                             matchingMode={matchingMode}
                             onMatchingModeChange={setMatchingMode}
                             lastAIPrompt={lastAIPrompt}
+                            onToggleMappingEnabled={toggleMappingEnabled}
                         />;
                     case 'chat':
                         return <ChatInterface
@@ -2434,7 +2465,7 @@ ${JSON.stringify(physicalSensors, null, 2)}
         };
 
         // センサーマッピングコンポーネント
-        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping, matchingMode, onMatchingModeChange, lastAIPrompt }) => {
+        const SensorMapping = ({ generatedSensors, physicalSensors, mappings, onImportCSV, onPerformMapping, matchingMode, onMatchingModeChange, lastAIPrompt, onToggleMappingEnabled }) => {
             const [showPrompt, setShowPrompt] = useState(false);
 
             const copyPromptToClipboard = () => {
@@ -2547,16 +2578,29 @@ ${JSON.stringify(physicalSensors, null, 2)}
                         {mappings.length > 0 && (
                             <div className="card">
                                 <h2>マッピング結果</h2>
+                                <div style={{fontSize: '12px', color: '#666', marginBottom: '10px'}}>
+                                    ℹ️ チェックを外したマッピングは自然言語クエリで使用されません
+                                </div>
                                 <div className="mapping-result">
                                     {mappings.map((mapping, index) => (
-                                        <div key={index} className="mapping-item">
-                                            <div>
-                                                <strong>{mapping.generatedSensorName}</strong>
-                                                <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
-                                                    → {mapping.physicalSensorName}
-                                                </div>
-                                                <div style={{fontSize: '11px', color: '#888', marginTop: '2px'}}>
-                                                    {mapping.reason}
+                                        <div key={index} className="mapping-item" style={{
+                                            opacity: mapping.enabled !== false ? 1 : 0.5
+                                        }}>
+                                            <div style={{display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1}}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={mapping.enabled !== false}
+                                                    onChange={() => onToggleMappingEnabled(index)}
+                                                    style={{marginTop: '3px', cursor: 'pointer'}}
+                                                />
+                                                <div style={{flex: 1}}>
+                                                    <strong>{mapping.generatedSensorName}</strong>
+                                                    <div style={{fontSize: '12px', color: '#666', marginTop: '4px'}}>
+                                                        → {mapping.physicalSensorName}
+                                                    </div>
+                                                    <div style={{fontSize: '11px', color: '#888', marginTop: '2px'}}>
+                                                        {mapping.reason}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <span className={`confidence-badge ${
